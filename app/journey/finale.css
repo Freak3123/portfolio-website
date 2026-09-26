@@ -1,0 +1,320 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Chapter 6 — Finale (components/scenes/Finale.tsx)
+   Tokens only; the ground stays transparent so the zoomed-out web shows
+   through, and a radial vignette in var(--ground) keeps the copy legible.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.scene--finale {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  color: var(--fg);
+  transition: color var(--fg-swap);
+}
+
+/* ── the final connection ────────────────────────────────────────────── */
+.fn-web {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: none;
+  opacity: 0.55;
+}
+.fn-web[data-live] {
+  opacity: 1;
+}
+.fn-strand {
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke var(--fg-swap);
+}
+.fn-node {
+  fill: var(--fg);
+  transition: fill var(--fg-swap);
+}
+.fn-hub-core,
+.fn-hub-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fn-hub-core {
+  fill: var(--accent);
+  transition: transform 700ms var(--ease-out), opacity 400ms ease;
+}
+.fn-hub-halo {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.5;
+  transition: transform 900ms var(--ease-out), opacity 600ms ease;
+}
+.fn-hub:not([data-lit]) .fn-hub-core,
+.fn-hub:not([data-lit]) .fn-hub-halo {
+  opacity: 0;
+  transform: scale(0.2);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fn-web[data-live] .fn-hub[data-lit] .fn-hub-halo {
+    animation: fn-halo 2.8s var(--ease-out) 900ms infinite;
+  }
+}
+@keyframes fn-halo {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* ── layout ──────────────────────────────────────────────────────────── */
+.fn-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1.5rem, 4svh, 3rem);
+  min-height: 100svh;
+  padding-top: clamp(4.5rem, 11svh, 7.5rem);
+  text-align: center;
+}
+.fn-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.7rem, 2svh, 1.35rem);
+  padding-inline: var(--gutter);
+}
+/* legibility over the web: a soft pool of ground colour behind the copy */
+.fn-center::before {
+  content: "";
+  position: absolute;
+  inset: -14% -18%;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    var(--ground) 0%,
+    color-mix(in srgb, var(--ground) 88%, transparent) 55%,
+    transparent 100%
+  );
+  transition: background var(--fg-swap);
+  pointer-events: none;
+}
+
+.fn-eyebrow {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+
+.fn-ending {
+  margin: 0;
+  font-size: clamp(2.1rem, 0.9rem + 4.6vw, 5.75rem);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.fn-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.fn-mask > span {
+  display: inline-block;
+}
+
+.fn-tagline {
+  margin: 0;
+  font-size: clamp(0.95rem, 0.88rem + 0.3vw, 1.15rem);
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+
+/* ── the round button ────────────────────────────────────────────────── */
+.fn-magnet {
+  display: grid;
+  place-items: center;
+  padding: 0.25rem;
+}
+.fn-cta {
+  display: grid;
+  place-items: center;
+  width: clamp(7.5rem, 15svh, 10.5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--ground); /* ink on saffron / saffron on ink: 11.49:1 */
+  text-decoration: none;
+  will-change: transform;
+  transition: background-color var(--fg-swap), color var(--fg-swap), box-shadow 240ms ease;
+}
+.fn-cta:hover {
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.fn-cta:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 5px;
+}
+.fn-cta-label {
+  display: block;
+  font: 600 0.8125rem/1.3 var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── email / time / links ────────────────────────────────────────────── */
+.fn-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem 2rem;
+}
+.fn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.25rem);
+  cursor: pointer;
+}
+.fn-copy-text {
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.25em;
+}
+.fn-copy:hover .fn-copy-text {
+  text-decoration-color: currentColor;
+}
+.fn-copy-hint {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.fn-copy:focus-visible,
+.fn-links a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.fn-where {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.fn-time-digits {
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.fn-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.6rem;
+  font-size: 0.9375rem;
+}
+.fn-back {
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+.fn-back:hover {
+  color: var(--fg);
+}
+
+/* ── the giant name ──────────────────────────────────────────────────── */
+.fn-name {
+  width: 100%;
+  overflow: hidden;
+  padding-inline: clamp(0.5rem, 1.5vw, 1.25rem);
+}
+.fn-name-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 24svh;
+  overflow: visible;
+}
+.fn-name-svg text {
+  fill: var(--fg);
+  font-size: 122px;
+  font-weight: 600;
+  transition: fill var(--fg-swap);
+}
+
+/* ── live mode ───────────────────────────────────────────────────────── */
+:where(.journey[data-live]) .scene--finale {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+}
+.journey[data-live] .scene--finale .fn-body {
+  height: 100%;
+  min-height: 0;
+}
+
+/* before the hub lights, the ending waits behind its masks */
+.journey[data-live] .scene--finale .fn-mask > span {
+  transform: translateY(0);
+  transition: transform 1100ms var(--ease-out) calc(var(--i, 0) * 130ms);
+}
+.journey[data-live] .scene--finale:not([data-told]) .fn-mask > span {
+  transform: translateY(112%);
+  transition-duration: 300ms;
+  transition-delay: 0ms;
+}
+.journey[data-live] .scene--finale .fn-late {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 700ms ease calc(280ms + var(--i, 0) * 110ms),
+    transform 900ms var(--ease-out) calc(280ms + var(--i, 0) * 110ms);
+}
+.journey[data-live] .scene--finale:not([data-told]) .fn-late {
+  opacity: 0;
+  transform: translateY(14px);
+  visibility: hidden;
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s 200ms;
+}
+.journey[data-live] .scene--finale .fn-name-svg {
+  transform: translateY(0);
+  transition: transform 1300ms var(--ease-out) 600ms;
+}
+.journey[data-live] .scene--finale:not([data-told]) .fn-name-svg {
+  transform: translateY(105%);
+  transition-duration: 300ms;
+  transition-delay: 0ms;
+}
+
+/* The name runs edge to edge along the bottom, where the fixed sound toggle
+   and the progress spider live. Lift it clear of that row so neither sits
+   paper-on-paper over the letters. */
+.journey[data-live] .scene--finale .fn-name {
+  padding-bottom: clamp(3.25rem, 8vh, 4.75rem);
+}

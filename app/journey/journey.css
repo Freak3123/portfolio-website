@@ -1,0 +1,340 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   The journey stage: everything after the hero is one web.
+
+   Two modes, decided only by components/journey/JourneyEngine.tsx:
+   - static (no JS, prefers-reduced-motion): scenes flow as a plain stacked
+     document, one screen tall at least, fully readable. No canvas, no HUD.
+   - live (.journey[data-live]): the section is (LAST_STEP + 1) screens tall
+     (--journey-stops, written by the engine), the stage is sticky and fills
+     the viewport, scenes are stacked absolutely on top of each other and the
+     engine writes --presence / --local / data-active / inert on each.
+
+   Colours only from the state tokens so the bulb repaints the whole story.
+   Structural rules are normal specificity; the defaults a scene may want to
+   override (opacity, padding) sit inside :where() so any .scene--x rule wins.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.journey {
+  position: relative;
+  background: var(--ground);
+  color: var(--fg);
+  transition: background-color var(--fg-swap), color var(--fg-swap);
+}
+
+.journey-canvas,
+.journey-hud {
+  display: none;
+}
+
+/* ── static: a readable document ───────────────────────────────────────── */
+:where(.journey:not([data-live])) .scene {
+  position: relative;
+  min-height: 100svh;
+  padding-block: var(--section-y, 6rem);
+  padding-inline: var(--gutter, 1.25rem);
+}
+
+/* ── live: a pinned stage, a camera, one beat per gesture ──────────────── */
+.journey[data-live] {
+  height: calc(var(--journey-stops, 11) * 100svh);
+}
+
+.journey[data-live] .journey-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.journey[data-live] .journey-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.journey[data-live] .journey-scenes {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.journey[data-live] .scene {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.journey[data-live] .scene[data-active] {
+  visibility: visible;
+}
+/* inert is set below presence 0.5, so only the scene being looked at is live */
+.journey[data-live] .scene[data-active]:not([inert]) {
+  pointer-events: auto;
+}
+:where(.journey[data-live]) .scene {
+  opacity: var(--presence, 0);
+}
+
+/* ── HUD ───────────────────────────────────────────────────────────────── */
+.journey[data-live] .journey-hud {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  /* arrives with the stage: fades in over the last stretch of the handoff */
+  opacity: clamp(0, calc((var(--entry, 1) - 0.6) * 2.5), 1);
+}
+
+/* the progress thread — right edge, below the nav bar, bottom-left untouched */
+.jh-thread {
+  position: absolute;
+  top: max(6.5rem, 17svh);
+  bottom: max(5rem, 14svh);
+  right: clamp(0.5rem, 2vw, 1.75rem);
+  width: 2.5rem;
+  container-type: size;
+  pointer-events: none;
+}
+
+.jh-silk,
+.jh-drag {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  translate: -50% 0;
+}
+.jh-silk {
+  background: var(--rule);
+}
+/* the dragline the spider has paid out */
+.jh-drag {
+  background: var(--accent);
+  transform-origin: top;
+  transform: scaleY(var(--p, 0));
+  transition: background-color var(--fg-swap);
+}
+
+.jh-knots {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jh-knot {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--at, 0) * 100%);
+  translate: -50% -50%;
+}
+
+.jh-knot-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.jh-knot-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.jh-dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--fg-muted);
+  border-radius: 50%;
+  background: var(--ground);
+  transition: transform 320ms var(--ease-out, ease), background-color var(--fg-swap),
+    border-color var(--fg-swap);
+}
+.jh-knot-btn:hover .jh-dot,
+.jh-knot-btn:focus-visible .jh-dot {
+  transform: scale(1.45);
+  border-color: var(--accent);
+}
+.jh-knot-btn[aria-current] .jh-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.jh-label {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 0.35rem);
+  padding: 0.25rem 0.5rem;
+  background: color-mix(in srgb, var(--ground) 82%, transparent);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--fg);
+  opacity: 0;
+  translate: 0.4rem -50%;
+  transition: opacity 240ms ease, translate 360ms var(--ease-out, ease),
+    color var(--fg-swap), background-color var(--fg-swap);
+  pointer-events: none;
+}
+.jh-knot-btn:hover .jh-label,
+.jh-knot-btn:focus-visible .jh-label {
+  opacity: 1;
+  translate: 0 -50%;
+}
+
+/* the spider rides the end of its dragline */
+.jh-spider-wrap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  translate: -50% -16%;
+  transform: translateY(calc(var(--p, 0) * 100cqh));
+  pointer-events: none;
+}
+.jh-spider {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-origin: 50% 0;
+  animation: jh-sway 3.4s ease-in-out infinite alternate;
+  transition: stroke var(--fg-swap);
+}
+.jh-abdomen {
+  fill: var(--accent);
+  transition: fill var(--fg-swap);
+}
+.jh-head {
+  fill: var(--ground);
+  transition: fill var(--fg-swap);
+}
+.jh-legs {
+  transform-box: view-box;
+  transform-origin: 0 2px;
+}
+.journey-hud[data-moving] .jh-legs--a {
+  animation: jh-scuttle 0.16s ease-in-out infinite alternate;
+}
+.journey-hud[data-moving] .jh-legs--b {
+  animation: jh-scuttle 0.16s ease-in-out -0.08s infinite alternate-reverse;
+}
+
+@keyframes jh-sway {
+  from {
+    rotate: -3deg;
+  }
+  to {
+    rotate: 3deg;
+  }
+}
+@keyframes jh-scuttle {
+  from {
+    rotate: -7deg;
+  }
+  to {
+    rotate: 7deg;
+  }
+}
+
+/* first-beat hint: gone for good after the first move */
+.jh-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  translate: -50% 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  opacity: clamp(0, calc((var(--entry, 1) - 0.85) * 6.6), 1);
+  transition: opacity 600ms ease, color var(--fg-swap);
+  pointer-events: none;
+}
+.journey-hud[data-moved] .jh-hint {
+  opacity: 0;
+}
+.jh-hint-touch {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .jh-hint-wheel {
+    display: none;
+  }
+  .jh-hint-touch {
+    display: inline;
+  }
+}
+.jh-hint-arrow {
+  line-height: 1;
+}
+.jh-hint-line {
+  width: 1px;
+  height: 2.25rem;
+  background: currentColor;
+  animation: jh-drop 1.9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes jh-drop {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  50.01% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+@media (max-width: 640px) {
+  .jh-thread {
+    right: 0.25rem;
+    top: max(5.5rem, 15svh);
+    bottom: max(4.5rem, 12svh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-hud,
+  .journey-canvas {
+    display: none !important;
+  }
+}

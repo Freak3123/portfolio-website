@@ -1,0 +1,398 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Trace — symptom → root cause → fix, drawn in silk.
+   Colours come only from the hero tokens so the bulb repaints this too.
+   Static (no JS / reduced motion): heading + three project cards, each with
+   its finished web. Live (.journey[data-live]): one canvas, text driven by
+   --v / --sym / --cause / --fix written from components/scenes/trace/TraceCanvas.tsx.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* ── static: a readable stacked document ─────────────────────────────── */
+.trace-stage {
+  position: relative;
+  padding-block: var(--section-y);
+  padding-inline: var(--gutter);
+  color: var(--fg);
+  transition: color var(--fg-swap);
+}
+
+.trace-canvas,
+.trace-hoverlabel,
+.trace-counter {
+  display: none;
+}
+
+.trace-title {
+  margin: 0;
+  font-size: clamp(2.75rem, 1.5rem + 6vw, 8.5rem);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.trace-title-chars {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  vertical-align: bottom;
+}
+.trace-ch {
+  display: inline-block;
+}
+
+.trace-kicker {
+  margin: 1.25rem 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+
+.trace-projects {
+  list-style: none;
+  margin: clamp(3rem, 8vh, 5rem) 0 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+}
+
+.trace-card-web {
+  display: block;
+  width: 100%;
+  max-width: 13rem;
+  margin: 0 0 1.5rem;
+  overflow: visible;
+}
+.trace-card-web path {
+  fill: none;
+  stroke: var(--fg);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  transition: stroke var(--fg-swap);
+}
+.trace-card-dew {
+  fill: var(--fg);
+  opacity: 0.7;
+}
+.trace-card-hub {
+  fill: var(--accent);
+}
+
+.trace-stack {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.trace-name {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.75rem, 1rem + 2.2vw, 3rem);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.trace-stack,
+.trace-name,
+.trace-label dd {
+  overflow: hidden; /* the mask for the live reveal */
+}
+.trace-stack > span,
+.trace-name > span,
+.trace-label dd > span {
+  display: inline-block;
+}
+
+.trace-labels {
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+.trace-label {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--rule);
+}
+.trace-label dt {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.trace-label[data-k="cause"] dt {
+  color: var(--accent);
+}
+.trace-label dd {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.trace-metric {
+  margin: 1.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.trace-metric-num {
+  font-size: clamp(3rem, 1.8rem + 4.5vw, 6.5rem);
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.trace-metric-cap {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+
+/* round VIEW button (meermohsin.me gallery) */
+.trace-view {
+  display: inline-grid;
+  place-items: center;
+  width: 5.25rem;
+  height: 5.25rem;
+  margin-top: 1.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  color: var(--fg);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 220ms var(--ease-out),
+    color 220ms var(--ease-out),
+    transform 320ms var(--ease-out),
+    border-color var(--fg-swap);
+}
+.trace-view:hover {
+  background: var(--accent);
+  color: var(--ground);
+  transform: scale(1.06);
+}
+.trace-view:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* ── live: one pinned stage, scrubbed by --local ─────────────────────── */
+.journey[data-live] .trace-stage {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.journey[data-live] .trace-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.journey[data-live] .trace-hoverlabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  max-width: 16rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--rule);
+  background: var(--ground);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  will-change: transform;
+}
+.journey[data-live] .trace-hoverlabel[data-show="true"] {
+  opacity: 1;
+}
+.trace-hoverlabel > .mono {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* step 0 title: split letters rise through a mask */
+.journey[data-live] .trace-intro {
+  position: absolute;
+  left: var(--gutter);
+  top: 50%;
+  max-width: 44%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.journey[data-live] .trace-ch {
+  transform: translateY(calc((1 - clamp(0, var(--v, 0) * 1.5 - var(--i) * 0.04, 1)) * 110%));
+}
+.journey[data-live] .trace-kicker {
+  opacity: var(--v, 0);
+}
+
+.journey[data-live] .trace-counter {
+  display: block;
+  position: absolute;
+  left: var(--gutter);
+  top: clamp(5rem, 13vh, 8rem);
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-muted);
+  opacity: var(--v, 0);
+  font-variant-numeric: tabular-nums;
+}
+.trace-counter [data-trace-count] {
+  color: var(--fg);
+}
+
+/* the three projects share one spot; only the current one is revealed */
+.journey[data-live] .trace-projects {
+  position: absolute;
+  left: var(--gutter);
+  top: 50%;
+  width: min(38%, 30rem);
+  margin: 0;
+  gap: 0;
+  grid-template-columns: 1fr;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.journey[data-live] .trace-project {
+  grid-area: 1 / 1;
+  position: relative;
+}
+.journey[data-live] .trace-card-web {
+  display: none;
+}
+.journey[data-live] .trace-stack > span,
+.journey[data-live] .trace-name > span {
+  transform: translateY(calc((1 - var(--sym, 0)) * 110%));
+}
+.journey[data-live] .trace-label[data-k="sym"] dd > span {
+  transform: translateY(calc((1 - var(--sym, 0)) * 110%));
+}
+.journey[data-live] .trace-label[data-k="cause"] dd > span {
+  transform: translateY(calc((1 - var(--cause, 0)) * 110%));
+}
+.journey[data-live] .trace-label[data-k="fix"] dd > span {
+  transform: translateY(calc((1 - var(--fix, 0)) * 110%));
+}
+.journey[data-live] .trace-label[data-k="sym"] {
+  opacity: var(--sym, 0);
+}
+.journey[data-live] .trace-label[data-k="cause"] {
+  opacity: var(--cause, 0);
+}
+.journey[data-live] .trace-label[data-k="fix"] {
+  opacity: var(--fix, 0);
+}
+.journey[data-live] .trace-metric {
+  opacity: var(--fix, 0);
+  transform: translateY(calc((1 - var(--fix, 0)) * 1.25rem));
+}
+.journey[data-live] .trace-view {
+  pointer-events: auto;
+  opacity: var(--fix, 0);
+  scale: calc(0.6 + var(--fix, 0) * 0.4);
+}
+
+/* Phones. Chrome reserves top ~4.5rem (nav), bottom ~4.5rem (sound toggle)
+   and right ~2.75rem (progress thread) — nothing here lands in those zones.
+   The web sits in the upper band (TraceCanvas: cy 0.27h, R ≤ 0.13h). */
+@media (max-width: 759px) {
+  .journey[data-live] .trace-stage {
+    --safe-top: 4.75rem;
+    --safe-bottom: 5.25rem;
+    --safe-right: calc(var(--gutter) + 2.75rem);
+  }
+  .journey[data-live] .trace-counter {
+    top: var(--safe-top);
+  }
+  .journey[data-live] .trace-intro {
+    top: auto;
+    bottom: calc(var(--safe-bottom) + 1rem);
+    right: var(--safe-right);
+    max-width: none;
+    transform: none;
+  }
+  .journey[data-live] .trace-projects {
+    top: auto;
+    bottom: var(--safe-bottom);
+    right: var(--safe-right);
+    width: auto;
+    transform: none;
+  }
+  /* metric + VIEW share one row; the caption sits under the number */
+  .journey[data-live] .trace-project article {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 1rem;
+    align-items: end;
+  }
+  .journey[data-live] .trace-stack,
+  .journey[data-live] .trace-name,
+  .journey[data-live] .trace-labels {
+    grid-column: 1 / -1;
+  }
+  .journey[data-live] .trace-stack {
+    margin-bottom: 0.35rem;
+    font-size: 0.625rem;
+  }
+  .journey[data-live] .trace-name {
+    margin-bottom: 0.6rem;
+    font-size: 1.625rem;
+  }
+  .journey[data-live] .trace-labels {
+    gap: 0.35rem;
+  }
+  .journey[data-live] .trace-label {
+    grid-template-columns: 5rem 1fr;
+    gap: 0.5rem;
+    padding-top: 0.35rem;
+  }
+  .journey[data-live] .trace-label dt {
+    font-size: 0.625rem;
+  }
+  .journey[data-live] .trace-label dd {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+  .journey[data-live] .trace-metric {
+    grid-column: 1;
+    margin-top: 0.8rem;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .journey[data-live] .trace-metric-num {
+    font-size: 2.5rem;
+  }
+  .journey[data-live] .trace-metric-cap {
+    font-size: 0.625rem;
+  }
+  .journey[data-live] .trace-view {
+    grid-column: 2;
+    align-self: center;
+    margin-top: 0.8rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 0.625rem;
+  }
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Earth Again Movement: earth and leaf line drawing (demo cover)">
+  <!-- DEMO cover: ink line drawing on saffron (ink on saffron only; never paper on saffron) -->
+  <rect width="1600" height="1000" fill="#FDBF28"/>
+  <g fill="none" stroke="#0A101A" stroke-width="3">
+    <circle cx="800" cy="520" r="280"/>
+    <ellipse cx="800" cy="520" rx="120" ry="280"/>
+    <ellipse cx="800" cy="520" rx="220" ry="280"/>
+    <path d="M520 520 H1080 M548 400 H1052 M548 640 H1052"/>
+  </g>
+  <g stroke="#0A101A" stroke-width="3">
+    <path d="M1010 330 C 1080 200, 1220 170, 1320 190 C 1310 300, 1220 420, 1060 400 Z" fill="#0A101A"/>
+    <path d="M1030 380 C 1110 300, 1190 250, 1280 215" stroke="#FDBF28" fill="none"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="22" letter-spacing="3" fill="#0A101A">
+    <text x="64" y="80">EARTH AGAIN MOVEMENT / SAMBAD GROUP</text>
+    <text x="64" y="940">WEBSITE + ADMIN DASHBOARD</text>
+    <text x="1536" y="940" text-anchor="end">DEMO COVER</text>
+  </g>
+</svg>

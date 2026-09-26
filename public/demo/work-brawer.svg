@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Brawer: freehand strokes from several players (demo cover)">
+  <!-- DEMO cover: live multiplayer drawing strokes with player cursors -->
+  <rect width="1600" height="1000" fill="#0A101A"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M180 640 C 320 380, 470 360, 560 520 S 760 760, 900 560 S 1120 260, 1300 420" stroke="#FDBF28" stroke-width="28"/>
+    <path d="M260 300 C 380 220, 520 260, 600 330 S 720 420, 820 360" stroke="#F3EFE7" stroke-opacity="0.8" stroke-width="12"/>
+    <path d="M980 760 C 1060 700, 1160 720, 1220 790 S 1360 860, 1440 780" stroke="#F3EFE7" stroke-opacity="0.45" stroke-width="18"/>
+    <path d="M1180 180 C 1240 240, 1230 320, 1160 350 S 1080 300, 1120 240 S 1260 220, 1300 290" stroke="#FDBF28" stroke-opacity="0.55" stroke-width="8"/>
+    <path d="M300 800 q 40 -60 80 0 t 80 0 t 80 0 t 80 0" stroke="#98A1AC" stroke-width="6"/>
+  </g>
+  <g>
+    <path d="M1300 420 l 0 36 l 10 -10 l 14 22 l 8 -5 l -13 -22 l 15 -2 z" fill="#FDBF28" transform="translate(6 6)"/>
+    <path d="M820 360 l 0 36 l 10 -10 l 14 22 l 8 -5 l -13 -22 l 15 -2 z" fill="#F3EFE7" transform="translate(6 6)"/>
+    <path d="M1440 780 l 0 36 l 10 -10 l 14 22 l 8 -5 l -13 -22 l 15 -2 z" fill="#98A1AC" transform="translate(6 6)"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="22" letter-spacing="3" fill="#98A1AC">
+    <text x="64" y="80">BRAWER / LOBBY 07 · 12 PLAYERS</text>
+    <text x="64" y="940">60FPS · &lt;100MS</text>
+    <text x="1536" y="940" text-anchor="end">DEMO COVER</text>
+  </g>
+</svg>

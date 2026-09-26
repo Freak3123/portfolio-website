@@ -1,0 +1,614 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Site chrome: the fixed header, the web-map overlay, the sound gate and the
+   custom cursor. Colours only from the state tokens (--ground, --fg,
+   --fg-muted, --accent, --rule) so the bulb repaints the chrome with
+   everything else.
+
+   Territory:
+   - top bar: interactive items stay left of ~76vw (the hero lamp hangs at
+     87% / 80% of the width) and the bar never takes pointer events itself;
+   - right edge below the bar: the journey's progress thread (not ours);
+   - bottom-left: the sound gate.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 90;
+  pointer-events: none;
+  color: var(--fg);
+  transition: color var(--fg-swap);
+}
+
+.site-nav-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.2vw, 2rem);
+  /* the right-hand quarter belongs to the lamp */
+  padding: 1.1rem 24vw 1.1rem var(--gutter);
+  transform: translateY(0);
+  transition: transform 520ms var(--ease-out);
+}
+.site-nav-bar > * {
+  pointer-events: auto;
+}
+
+/* hide on scroll down, show on scroll up — never while focused or open */
+.site-nav[data-hidden="1"]:not(:focus-within):not([data-open="1"]) .site-nav-bar {
+  transform: translateY(-110%);
+}
+
+/* brand */
+.site-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: inherit;
+  text-decoration: none;
+}
+.site-nav-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--fg);
+  border-radius: 50%;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: border-color var(--fg-swap), background-color 200ms ease, color 200ms ease;
+}
+.site-nav-brand:hover .site-nav-mark,
+.site-nav-brand:focus-visible .site-nav-mark {
+  background: var(--fg);
+  color: var(--ground);
+}
+.site-nav-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: opacity 300ms ease;
+}
+
+/* mono link (Résumé) */
+.site-nav-link {
+  position: relative;
+  display: inline-block;
+  padding: 0.35rem 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.site-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.1rem;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 420ms var(--ease-out), background-color var(--fg-swap);
+}
+.site-nav-link:hover::after,
+.site-nav-link:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* status: meermohsin.me's "ONLINE" dot */
+.site-nav-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0 auto;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  transition: color var(--fg-swap);
+}
+.site-nav-dot {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: background-color var(--fg-swap);
+}
+.site-nav-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: site-nav-pulse 2s var(--ease-out) infinite;
+}
+@keyframes site-nav-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* map toggle */
+.site-nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem 0.5rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.site-nav-toggle:hover,
+.site-nav-toggle:focus-visible {
+  border-color: var(--fg);
+}
+.site-nav-toggle-icon svg {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  transition: transform 700ms var(--ease-out);
+}
+.site-nav-toggle:hover .site-nav-toggle-icon svg,
+.site-nav[data-open="1"] .site-nav-toggle-icon svg {
+  transform: rotate(45deg);
+}
+
+.site-nav :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* inside the journey: stay put, pared down */
+.site-nav[data-in-journey="1"]:not([data-open="1"]) .site-nav-name,
+.site-nav[data-in-journey="1"]:not([data-open="1"]) .site-nav-status > span:not(.site-nav-dot):not(.sr-only) {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* ── web map overlay (Awwwards overview map) ────────────────────────────── */
+.web-map {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: clamp(4.5rem, 10vh, 6rem) var(--gutter) clamp(1.5rem, 4vh, 2.5rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  background: var(--ground);
+  color: var(--fg);
+  transition: background-color var(--fg-swap), color var(--fg-swap);
+}
+.web-map[hidden] {
+  display: none;
+}
+.web-map-title {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(1.25rem, 4vh, 2rem);
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.web-map-frame {
+  position: relative;
+  width: min(100%, calc((100svh - 9rem) * 1.068));
+  max-width: 68rem;
+}
+.web-map-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+}
+.web-map-silk,
+.web-map-spine {
+  /* widths in viewBox units (~2.7 units per CSS px at typical sizes) */
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.web-map-silk {
+  stroke: var(--fg-muted);
+  stroke-width: 2.6;
+  opacity: 0.55;
+  transition: stroke var(--fg-swap);
+}
+.web-map-spine {
+  stroke: var(--accent);
+  stroke-width: 5.5;
+  transition: stroke var(--fg-swap);
+}
+/* warm = the hero's doodle grammar: wobbly, round, thicker */
+.web-map-warm {
+  display: none;
+}
+html[data-hero-state="warm"] .web-map-warm {
+  display: inline;
+}
+html[data-hero-state="warm"] .web-map-cold {
+  display: none;
+}
+.web-map-warm .web-map-silk {
+  stroke-width: 4.4;
+  opacity: 0.7;
+}
+.web-map-warm .web-map-spine {
+  stroke-width: 8;
+}
+
+.web-map-nodes {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.web-map-node {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.web-map-btn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 0;
+  border-radius: 1rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  /* centre the dot on the node */
+  transform: translate(-50%, -1.3rem);
+}
+.web-map-dot {
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: var(--ground);
+  box-shadow: 0 0 0 0 transparent;
+  transition: background-color 220ms ease, box-shadow 320ms var(--ease-out),
+    transform 320ms var(--ease-out), border-color var(--fg-swap);
+}
+.web-map-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.3rem;
+  background: var(--ground);
+  font-size: clamp(0.95rem, 0.7rem + 0.8vw, 1.35rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: color 200ms ease, background-color var(--fg-swap);
+}
+.web-map-num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+}
+.web-map-btn:hover .web-map-dot,
+.web-map-btn:focus-visible .web-map-dot {
+  background: var(--accent);
+  transform: scale(1.35);
+  box-shadow: 0 0 0 0.45rem color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 1.6rem color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.web-map-btn:hover .web-map-label,
+.web-map-btn:focus-visible .web-map-label {
+  color: var(--accent);
+}
+.web-map-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* you are here */
+.web-map-btn[aria-current="location"] .web-map-dot {
+  background: var(--accent);
+}
+.web-map-btn[aria-current="location"] .web-map-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: site-nav-pulse 2s var(--ease-out) infinite;
+}
+/* never paper on saffron: in warm the accent is ink, so the label stays --fg */
+html[data-hero-state="warm"] .web-map-btn:hover .web-map-label,
+html[data-hero-state="warm"] .web-map-btn:focus-visible .web-map-label {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+html[data-menu-open="1"] {
+  overflow: hidden;
+}
+
+/* ── sound gate (bottom-left) ───────────────────────────────────────────── */
+.sound-gate {
+  position: fixed;
+  left: var(--gutter);
+  bottom: clamp(0.75rem, 2.5vh, 1.5rem);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: var(--fg);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 600ms ease, color var(--fg-swap);
+}
+.sound-gate[data-ready="1"] {
+  visibility: visible;
+  opacity: 1;
+}
+.sound-gate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sound-gate-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+.sound-gate-state {
+  display: inline-block;
+  min-width: 2.2em;
+}
+.sound-gate-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 0.9rem;
+}
+.sound-gate-bars i {
+  display: block;
+  width: 2px;
+  height: 100%;
+  background: currentColor;
+  transform: scaleY(0.2);
+  transform-origin: bottom;
+  transition: transform 400ms var(--ease-out);
+}
+.sound-gate[data-on="1"] .sound-gate-bars i {
+  animation: sound-eq 1s ease-in-out infinite alternate;
+}
+.sound-gate[data-on="1"] .sound-gate-bars i:nth-child(2) {
+  animation-duration: 0.7s;
+  animation-delay: -0.3s;
+}
+.sound-gate[data-on="1"] .sound-gate-bars i:nth-child(3) {
+  animation-duration: 1.2s;
+  animation-delay: -0.6s;
+}
+.sound-gate[data-on="1"] .sound-gate-bars i:nth-child(4) {
+  animation-duration: 0.85s;
+  animation-delay: -0.15s;
+}
+@keyframes sound-eq {
+  0% {
+    transform: scaleY(0.2);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+.sound-gate-hint {
+  color: var(--fg-muted);
+  white-space: nowrap;
+  animation: sound-hint 2.4s ease-in-out infinite;
+  transition: color var(--fg-swap);
+}
+@keyframes sound-hint {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (max-width: 599px) {
+  .sound-gate-hint {
+    display: none;
+  }
+}
+
+/* ── breakpoints (bar) ──────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+  .site-nav-bar {
+    padding-right: var(--gutter);
+  }
+  /* the lamp moves to 80% on narrow screens; only matters while it is on screen */
+  .site-nav[data-in-hero="1"]:not([data-open="1"]) .site-nav-bar {
+    padding-right: 28vw;
+  }
+  /* the hero's h1 sits top-centre here; the bar waits until the story starts */
+  .site-nav[data-in-hero="1"]:not(:focus-within):not([data-open="1"]) .site-nav-bar {
+    transform: translateY(-110%);
+  }
+}
+@media (max-width: 767px) {
+  .site-nav-status {
+    display: none;
+  }
+  .site-nav-toggle {
+    margin-left: auto;
+  }
+}
+@media (max-width: 599px) {
+  .site-nav-name,
+  .site-nav-resume {
+    display: none;
+  }
+}
+
+/* ── custom cursor + silk trail ─────────────────────────────────────────── */
+.cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+.cursor-trail {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.cursor[data-visible="1"] .cursor-dot {
+  opacity: 1;
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: var(--accent);
+}
+.cursor-ring {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 1px solid var(--accent);
+  transition: opacity 220ms ease, width 320ms var(--ease-out), height 320ms var(--ease-out),
+    margin 320ms var(--ease-out);
+}
+.cursor[data-visible="1"][data-hover="1"] .cursor-ring {
+  opacity: 1;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.cursor[data-visible="1"][data-hover="1"][data-label="1"] .cursor-ring {
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+}
+.cursor[data-hover="1"] .cursor-dot {
+  opacity: 0;
+}
+.cursor-label {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+/* native cursor hidden only where the custom one runs — never on the hero
+   stage, whose grab/grabbing cursor advertises its press-and-drag */
+html.has-cursor body,
+html.has-cursor :where(a, button, [data-cursor]):not(.hero-stage *) {
+  cursor: none;
+}
+
+/* ── reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .site-nav-dot::after,
+  .web-map-btn[aria-current="location"] .web-map-dot::after,
+  .sound-gate[data-on="1"] .sound-gate-bars i,
+  .sound-gate-hint {
+    animation: none;
+  }
+  .sound-gate[data-on="1"] .sound-gate-bars i:nth-child(odd) {
+    transform: scaleY(0.8);
+  }
+  .sound-gate[data-on="1"] .sound-gate-bars i:nth-child(even) {
+    transform: scaleY(0.5);
+  }
+  .site-nav-bar,
+  .site-nav-toggle-icon svg,
+  .web-map-dot {
+    transition: none;
+  }
+}

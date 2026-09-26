@@ -1,0 +1,272 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Chapter 5 — The other half (components/scenes/Creative.tsx)
+   Inside this scene the tokens ARE the hero's warm set, whatever the bulb
+   says: saffron ground, ink text, umber muted. Paper never touches saffron
+   (1.45:1); the only white here is decorative doodle line.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.scene--creative {
+  --ground: var(--saffron);
+  --fg: var(--ink);
+  --fg-muted: var(--umber);
+  --accent: var(--ink);
+  --rule: color-mix(in srgb, var(--ink) 18%, transparent);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  color: var(--fg);
+}
+
+/* the flood. Static: always full. Live: clip-path written per frame. */
+.cr-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--ground);
+}
+
+/* ── the web, inked by the creative self ─────────────────────────────── */
+.cr-web {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: none;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+.cr-web path {
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.cr-web-radials {
+  stroke-width: 1.6;
+}
+.cr-web-spiral {
+  stroke-width: 1.3;
+}
+
+/* ── doodles ─────────────────────────────────────────────────────────── */
+.cr-doodles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.cr-doodles path {
+  fill: none;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── steps ───────────────────────────────────────────────────────────── */
+.cr-step {
+  position: relative;
+  z-index: 3;
+  padding: var(--section-y) var(--gutter);
+}
+.cr-s0 {
+  display: grid;
+  place-items: center;
+  min-height: 60svh;
+}
+
+.cr-title {
+  margin: 0;
+  font-size: clamp(3rem, 1.5rem + 8vw, 10rem);
+  font-weight: 300;
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+  text-align: center;
+  color: var(--fg);
+}
+
+.cr-play {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  width: min(100%, 1240px);
+  margin-inline: auto;
+}
+
+.cr-prompt {
+  margin: 0 0 1rem;
+  font-size: clamp(1.75rem, 1.1rem + 2.4vw, 3.25rem);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+/* ── draw pad ────────────────────────────────────────────────────────── */
+.cr-pad {
+  position: relative;
+}
+.cr-pad-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 48svh;
+  border: 1.5px dashed var(--fg);
+  border-radius: 18px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.cr-pad-clear {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--fg);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: 500 0.75rem/1 var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.cr-pad-clear:hover {
+  background: var(--fg);
+  color: var(--ground);
+}
+.cr-pad-clear:focus-visible,
+.cr-card-view:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+}
+
+/* ── throwable polaroids ─────────────────────────────────────────────── */
+.cr-tray {
+  position: relative;
+  min-height: clamp(320px, 54svh, 540px);
+}
+.cr-card {
+  position: absolute;
+  left: var(--hx);
+  top: var(--hy);
+  width: clamp(150px, 15vw, 230px);
+  padding: 10px 10px 14px;
+  background: #fff;
+  color: var(--ink);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgb(10 16 26 / 0.08), 0 14px 30px -12px rgb(10 16 26 / 0.45);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+  transition: box-shadow 200ms ease;
+}
+.cr-card[data-dragging] {
+  cursor: grabbing;
+  box-shadow: 0 1px 0 rgb(10 16 26 / 0.08), 0 28px 50px -14px rgb(10 16 26 / 0.55);
+}
+.cr-card-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--ink);
+  pointer-events: none;
+}
+.cr-card-cap {
+  padding: 0.6rem 0.2rem 0;
+}
+.cr-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.cr-card-tag {
+  margin: 0.2rem 0 0;
+  font: 400 0.6875rem/1.3 var(--font-geist-mono), ui-monospace, monospace;
+  color: var(--umber); /* umber on white: 10.9:1 */
+}
+.cr-card-view {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--saffron); /* 11.49:1 */
+  font: 600 0.6875rem/1 var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 220ms var(--ease-out);
+}
+.cr-card-view:hover {
+  transform: scale(1.1);
+}
+
+@media (max-width: 760px) {
+  .cr-play {
+    grid-template-columns: 1fr;
+  }
+  .cr-tray {
+    min-height: 300px;
+  }
+  .cr-card {
+    width: clamp(120px, 34vw, 170px);
+  }
+  .cr-card-view {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* ── live mode: pinned stage, the journey drives everything ──────────── */
+:where(.journey[data-live]) .scene--creative {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+}
+.journey[data-live] .scene--creative .cr-wash {
+  clip-path: polygon(0 0, 0 0, 0 0);
+}
+.journey[data-live] .scene--creative .cr-web {
+  opacity: calc(0.8 * var(--cr-wipe, 0));
+}
+.journey[data-live] .scene--creative .cr-web-radials {
+  stroke-dashoffset: calc(1 - var(--cr-draw, 0));
+}
+.journey[data-live] .scene--creative .cr-web-spiral {
+  stroke-dashoffset: calc(1 - clamp(0, var(--cr-draw, 0) * 1.6 - 0.6, 1));
+}
+.journey[data-live] .scene--creative .cr-doodles {
+  opacity: var(--cr-wipe, 0);
+}
+.journey[data-live] .scene--creative .cr-step {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: clamp(4.5rem, 10svh, 6.5rem) var(--gutter) clamp(2rem, 6svh, 4rem);
+}
+.journey[data-live] .scene--creative .cr-s0 {
+  opacity: var(--cr-s0, 0);
+  transform: translateY(calc((1 - var(--cr-s0, 0)) * -3svh));
+}
+.journey[data-live] .scene--creative .cr-s1 {
+  opacity: var(--cr-s1, 0);
+  transform: translateY(calc((1 - var(--cr-s1, 0)) * 4svh));
+}

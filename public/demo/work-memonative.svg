@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Memonative: abstract memory graph (demo cover)">
+  <!-- DEMO cover: memory nodes linked, older memories fading (Ebbinghaus decay) -->
+  <rect width="1600" height="1000" fill="#0A101A"/>
+  <g stroke="#F3EFE7" stroke-width="1.5" fill="none">
+    <path d="M800 500 L520 320 M800 500 L1080 300 M800 500 L1120 640 M800 500 L560 720 M520 320 L300 220 M520 320 L360 470 M1080 300 L1320 200 M1080 300 L1300 420 M1120 640 L1340 760 M560 720 L330 820 M560 720 L760 850 M1120 640 L900 820" stroke-opacity="0.22"/>
+    <path d="M300 220 L160 160 M360 470 L180 520 M1320 200 L1460 130 M1300 420 L1470 470 M1340 760 L1480 860 M330 820 L150 880" stroke-opacity="0.08" stroke-dasharray="4 8"/>
+  </g>
+  <circle cx="800" cy="500" r="120" fill="none" stroke="#FDBF28" stroke-opacity="0.25"/>
+  <circle cx="800" cy="500" r="200" fill="none" stroke="#FDBF28" stroke-opacity="0.1"/>
+  <circle cx="800" cy="500" r="30" fill="#FDBF28"/>
+  <g fill="#FDBF28">
+    <circle cx="520" cy="320" r="18"/><circle cx="1080" cy="300" r="18"/>
+    <circle cx="1120" cy="640" r="16"/><circle cx="560" cy="720" r="16"/>
+  </g>
+  <g fill="#FDBF28" fill-opacity="0.45">
+    <circle cx="300" cy="220" r="11"/><circle cx="360" cy="470" r="11"/><circle cx="1320" cy="200" r="11"/>
+    <circle cx="1300" cy="420" r="11"/><circle cx="1340" cy="760" r="10"/><circle cx="330" cy="820" r="10"/>
+    <circle cx="760" cy="850" r="10"/><circle cx="900" cy="820" r="10"/>
+  </g>
+  <g fill="#F3EFE7" fill-opacity="0.18">
+    <circle cx="160" cy="160" r="6"/><circle cx="180" cy="520" r="6"/><circle cx="1460" cy="130" r="6"/>
+    <circle cx="1470" cy="470" r="6"/><circle cx="1480" cy="860" r="5"/><circle cx="150" cy="880" r="5"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="22" letter-spacing="3" fill="#98A1AC">
+    <text x="64" y="80">MEMONATIVE / MEMORY GRAPH</text>
+    <text x="64" y="940">RECALL · DECAY · CONSOLIDATE</text>
+    <text x="1536" y="940" text-anchor="end">DEMO COVER</text>
+  </g>
+</svg>

@@ -1,0 +1,99 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Shared by every section below the hero. Colours come ONLY from the hero's
+   state tokens (--ground, --fg, --fg-muted, --accent) so the bulb switch
+   repaints the whole story, not just the first screen. Never hard-code
+   #0A101A / #FDBF28 in a section; never put --paper on saffron (1.45:1).
+   ──────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --gutter: clamp(1.25rem, 5vw, 4.5rem);
+  --section-y: clamp(6rem, 14vh, 11rem);
+  --rule: color-mix(in srgb, var(--fg) 16%, transparent);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  scroll-behavior: auto; /* Lenis owns smooth scrolling */
+}
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.chapter {
+  position: relative;
+  padding: var(--section-y) var(--gutter);
+  background: var(--ground);
+  color: var(--fg);
+  transition: background-color var(--fg-swap), color var(--fg-swap);
+}
+
+/* small uppercase chapter marker: "(02) — Experience" */
+.chapter-label {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin: 0 0 clamp(2rem, 5vh, 3.5rem);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.chapter-label b {
+  font-weight: 500;
+  color: var(--accent);
+  transition: color var(--fg-swap);
+}
+
+/* oversized display line — light weight, tight tracking (DESIGN-SYSTEM §2) */
+.display-xl {
+  margin: 0;
+  font-size: clamp(2.75rem, 1.5rem + 6vw, 8.5rem);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+.display-l {
+  margin: 0;
+  font-size: clamp(2rem, 1.3rem + 3.2vw, 4.75rem);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.link-u {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color 160ms ease;
+}
+.link-u:hover {
+  text-decoration-color: var(--accent);
+}
+
+:where(.chapter, .site-nav, .site-footer) :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--ground);
+  border-radius: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

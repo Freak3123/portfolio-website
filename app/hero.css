@@ -26,7 +26,9 @@
   --fg-swap: 220ms var(--state-ease) 480ms;
 }
 
-html[data-hero-state="warm"] {
+html[data-hero-state="warm"],
+/* the journey's creative chapter warms the whole page the same way */
+html[data-journey-warm] {
   --ground: var(--saffron);
   --fg: var(--ink);
   --fg-muted: var(--umber);
@@ -57,7 +59,10 @@ html {
   outline: none;
   /* the peek is a press-and-drag now, so the pointer has to advertise it */
   cursor: grab;
-  touch-action: none;
+  /* The page scrolls past the hero now. With `none`, a phone could never leave
+     the first screen. `pan-y` hands vertical swipes to the browser (which fires
+     pointercancel — handled as a release); hold or sideways drag still peeks. */
+  touch-action: pan-y;
 }
 .hero-stage[data-pressed] {
   cursor: grabbing;

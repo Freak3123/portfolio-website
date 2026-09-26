@@ -1,0 +1,369 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Chapter 4 — CONNECT. Colours only from the state tokens.
+   Default rules = static mode: the graph (hover still works) followed by the
+   grouped skill lists. `.journey[data-live]` = full-viewport stage, lists
+   hidden (every node carries its connections in its aria-label).
+   ──────────────────────────────────────────────────────────────────────── */
+
+.cn {
+  position: relative;
+  padding: var(--section-y) var(--gutter);
+  color: var(--fg);
+  transition: color var(--fg-swap);
+}
+
+.cn-title__mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+}
+.cn-title__mask > span {
+  display: inline-block;
+}
+
+.cn-hint {
+  margin: 1rem 0 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+
+.cn-svg {
+  display: block;
+  width: 100%;
+  max-width: 72rem;
+  height: auto;
+  margin: clamp(1.5rem, 5vh, 3rem) auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+/* ── silk ─────────────────────────────────────────────────────────────── */
+.cn-frame path,
+.cn-radial,
+.cn-ring,
+.cn-edge {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1;
+  stroke-linecap: round;
+  transition: stroke var(--fg-swap), opacity 260ms ease;
+}
+.cn-frame path {
+  opacity: 0.35;
+}
+.cn-frame circle {
+  fill: var(--fg-muted);
+}
+.cn-radial {
+  opacity: 0.5;
+}
+.cn-ring {
+  opacity: 0.4;
+}
+.cn-edge {
+  opacity: 0.3;
+}
+.cn-hub {
+  fill: var(--accent);
+  transition: fill var(--fg-swap);
+}
+.cn-hub-label {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  fill: var(--accent);
+  paint-order: stroke;
+  stroke: var(--ground);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  transition: fill var(--fg-swap), stroke var(--fg-swap), opacity 260ms ease;
+}
+
+/* ── nodes ────────────────────────────────────────────────────────────── */
+.cn-node {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 260ms ease;
+}
+.cn-hit {
+  fill: transparent;
+}
+.cn-node:focus-visible .cn-hit {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+.cn-dew,
+.cn-core {
+  fill: var(--fg);
+  transition: fill var(--fg-swap), transform 240ms var(--ease-out);
+}
+.cn-glint {
+  fill: var(--ground);
+  transition: fill var(--fg-swap);
+}
+.cn-halo {
+  fill: var(--ground);
+  stroke: var(--fg);
+  stroke-width: 1.2;
+  transition: stroke var(--fg-swap), fill var(--fg-swap), transform 240ms var(--ease-out);
+}
+.cn-core {
+  fill: var(--accent);
+}
+.cn-label,
+.cn-project-label {
+  fill: var(--fg);
+  paint-order: stroke;
+  stroke: var(--ground);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  transition: fill var(--fg-swap), stroke var(--fg-swap), opacity 260ms ease;
+}
+.cn-label {
+  font-size: 14px;
+  opacity: 0.82;
+}
+.cn-project-label {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* ── focus mode: connected nodes light, everything else dims ─────────── */
+.cn-svg[data-focus] .cn-node {
+  opacity: 0.2;
+}
+.cn-svg[data-focus] .cn-node[data-lit],
+.cn-svg[data-focus] .cn-node[data-spark] {
+  opacity: 1;
+}
+.cn-svg[data-focus] .cn-frame path,
+.cn-svg[data-focus] .cn-ring,
+.cn-svg[data-focus] .cn-radial {
+  opacity: 0.12;
+}
+.cn-svg[data-focus] .cn-edge {
+  opacity: 0.06;
+}
+.cn-radial[data-lit] {
+  stroke: var(--accent);
+  opacity: 1 !important;
+}
+.cn-edge[data-lit="warm"] {
+  stroke: var(--fg);
+  opacity: 0.4;
+}
+.cn-edge[data-lit="hot"] {
+  stroke: var(--accent);
+  stroke-width: 2;
+  opacity: 1;
+  stroke-dasharray: 1 1;
+  animation: cn-draw 640ms var(--ease-out) both;
+}
+@keyframes cn-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.cn-node[data-lit="hot"] .cn-dew {
+  fill: var(--accent);
+  transform: scale(1.7);
+}
+.cn-node[data-lit="hot"] .cn-halo {
+  transform: scale(1.25);
+  stroke: var(--accent);
+}
+.cn-node[data-lit="hot"] .cn-label {
+  opacity: 1;
+  font-weight: 600;
+}
+.cn-node[data-lit="glow"] .cn-dew {
+  fill: var(--accent);
+  transform: scale(1.3);
+}
+.cn-node[data-lit="glow"] .cn-label {
+  opacity: 1;
+}
+.cn-node[data-spark] .cn-dew {
+  fill: var(--accent);
+  transform: scale(1.35);
+  transition-duration: 120ms;
+}
+
+/* ── static lists ─────────────────────────────────────────────────────── */
+.cn-static {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 2rem;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+.cn-static__name {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  transition: color var(--fg-swap);
+}
+.cn-static ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9375rem;
+}
+.cn-static__to {
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+  transition: color var(--fg-swap);
+}
+.cn-static__projects {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-edge[data-lit="hot"] {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/* ═════════════════════════════ LIVE ═══════════════════════════════════ */
+
+.journey[data-live] .scene--connect .cn {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.journey[data-live] .scene--connect .cn-title {
+  position: absolute;
+  top: clamp(5rem, 13vh, 8.5rem);
+  left: var(--gutter);
+  z-index: 2;
+  pointer-events: none;
+}
+.journey[data-live] .scene--connect .cn-title__mask > span {
+  transform: translateY(calc((1 - var(--presence, 1)) * 110%));
+}
+.journey[data-live] .scene--connect .cn-title__mask + .cn-title__mask > span {
+  transform: translateY(calc((1 - var(--presence, 1)) * 150%));
+}
+.journey[data-live] .scene--connect .cn-stage {
+  position: absolute;
+  inset: 0;
+}
+.journey[data-live] .scene--connect .cn-svg {
+  position: absolute;
+  top: clamp(8rem, 19vh, 12rem);
+  bottom: clamp(2rem, 6vh, 4rem);
+  left: var(--gutter);
+  right: var(--gutter);
+  max-width: none;
+  margin: 0;
+  width: calc(100% - 2 * var(--gutter));
+  height: calc(100% - clamp(8rem, 19vh, 12rem) - clamp(2rem, 6vh, 4rem));
+  /* scene-level fade lives in journey.css */
+}
+.journey[data-live] .scene--connect .cn-hint {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(1.25rem, 4vh, 2.5rem);
+  margin: 0;
+  opacity: 0.9;
+}
+.journey[data-live] .scene--connect .cn-static {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .journey[data-live] .scene--connect .cn-stage {
+    --cn-bottom: 6.25rem;
+  }
+  .journey[data-live] .scene--connect .cn-hint {
+    bottom: 4.75rem;
+  }
+}
+
+/* ── the tall layout (phones, portrait tablets) ──────────────────────────
+   keep the query in sync with TALL_QUERY in components/scenes/connect/layout.ts */
+.cn-svg--tall {
+  display: none;
+}
+@media (max-aspect-ratio: 5/6) {
+  .cn-svg--wide {
+    display: none;
+  }
+  .cn-svg--tall {
+    display: block;
+  }
+  .journey[data-live] .scene--connect .cn-stage {
+    --cn-top: calc(clamp(5rem, 13vh, 8.5rem) + clamp(2.75rem, 2rem + 3.2vw, 5.5rem));
+    --cn-left: 0.5rem;
+    --cn-right: 3rem;
+  }
+}
+/* sizes are in viewBox units (the tall web renders at ~0.4 px per unit on a phone) */
+.cn-svg--tall .cn-hub-label {
+  font-size: 30px;
+  stroke-width: 9px;
+}
+.cn-svg--tall .cn-project-label {
+  font-size: 33px;
+  stroke-width: 8px;
+}
+.cn-svg--tall .cn-frame path,
+.cn-svg--tall .cn-radial,
+.cn-svg--tall .cn-ring,
+.cn-svg--tall .cn-edge {
+  stroke-width: 2;
+}
+.cn-svg--tall .cn-edge[data-lit="hot"] {
+  stroke-width: 4;
+}
+.cn-svg--tall .cn-halo {
+  stroke-width: 2.4;
+}
+/* skill names: only the lit ones, and the whole cluster of the one touched */
+.cn-svg--tall .cn-label {
+  font-size: 28px;
+  stroke-width: 8px;
+  opacity: 0;
+}
+.cn-svg--tall .cn-node[data-lit] .cn-label,
+.cn-svg--tall .cn-node:focus-visible .cn-label,
+.cn-svg--tall[data-lit-group="0"] .cn-node[data-g="0"] .cn-label,
+.cn-svg--tall[data-lit-group="1"] .cn-node[data-g="1"] .cn-label,
+.cn-svg--tall[data-lit-group="2"] .cn-node[data-g="2"] .cn-label,
+.cn-svg--tall[data-lit-group="3"] .cn-node[data-g="3"] .cn-label,
+.cn-svg--tall[data-lit-group="4"] .cn-node[data-g="4"] .cn-label {
+  opacity: 1;
+}
+.cn-svg--tall[data-lit-group="0"] .cn-node[data-g="0"],
+.cn-svg--tall[data-lit-group="1"] .cn-node[data-g="1"],
+.cn-svg--tall[data-lit-group="2"] .cn-node[data-g="2"],
+.cn-svg--tall[data-lit-group="3"] .cn-node[data-g="3"],
+.cn-svg--tall[data-lit-group="4"] .cn-node[data-g="4"] {
+  opacity: 1;
+}

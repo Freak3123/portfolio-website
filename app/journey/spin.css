@@ -1,0 +1,374 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Chapter 3 — SPIN. Colours only from the state tokens; the bulb repaints it.
+   Default rules = static mode (no JS / reduced motion): a readable stacked
+   page with the web at its finished state. `.journey[data-live]` rules turn
+   it into a full-viewport, progress-driven stage.
+   Progress vars (written by SpinWeb on the scene element):
+     --spin-frame  0…1  radials + frame drawn  (local −1 → 0)
+     --spin-b0…3   0…1  each career ring laid  (local 0 → 1)
+   ──────────────────────────────────────────────────────────────────────── */
+
+.spin {
+  position: relative;
+  padding: var(--section-y) var(--gutter);
+  color: var(--fg);
+  transition: color var(--fg-swap);
+}
+
+.spin-title {
+  max-width: 14ch;
+}
+.spin-title__mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+}
+.spin-title__mask > span {
+  display: inline-block;
+}
+
+/* ── the web ─────────────────────────────────────────────────────────── */
+.spin-web {
+  position: relative;
+  width: min(100%, 38rem);
+  aspect-ratio: 1;
+  margin: clamp(2rem, 6vh, 4rem) auto;
+}
+.spin-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.spin-silk path {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  transition: stroke var(--fg-swap);
+}
+.spin-silk .spin-frame {
+  stroke-width: 1.1;
+  opacity: 0.7;
+}
+.spin-band {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  opacity: 0.85;
+  transition: stroke var(--fg-swap);
+}
+.spin-dew circle {
+  fill: var(--accent);
+  opacity: 0.16;
+  transition: fill var(--fg-swap);
+}
+.spin-spider path {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  transition: stroke var(--fg-swap);
+}
+.spin-spider ellipse,
+.spin-spider circle {
+  fill: var(--fg);
+  transition: fill var(--fg-swap);
+}
+
+/* ── rings as a plain list (static) ──────────────────────────────────── */
+.spin-rings {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 38rem;
+  display: grid;
+  gap: 2rem;
+}
+.spin-ring__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0 0 0.75rem;
+}
+.spin-ring__when {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  transition: color var(--fg-swap);
+}
+.spin-ring__place {
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.spin-ring__gist {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.spin-drops {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.spin-drop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: 500 0.8125rem/1.2 var(--font-geist-mono), ui-monospace, monospace;
+  cursor: default;
+  transition: color var(--fg-swap), border-color var(--fg-swap);
+}
+.spin-drop:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.spin-drop__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  /* a dew drop: body + highlight (same recipe as draw.ts dew()) */
+  background: radial-gradient(circle at 34% 34%, var(--ground) 0 17%, var(--fg) 22%);
+  transition: background var(--fg-swap), transform 220ms var(--ease-out);
+}
+
+/* ── stat blocks (meermohsin.me) ─────────────────────────────────────── */
+.spin-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  margin: 0 auto;
+  max-width: 38rem;
+}
+.spin-stat {
+  display: flex;
+  flex-direction: column-reverse;
+}
+.spin-stat__label {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.spin-stat__value {
+  margin: 0;
+  font-size: clamp(2.5rem, 1.5rem + 3.5vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═════════════════════════════ LIVE ═══════════════════════════════════ */
+
+.journey[data-live] .scene--spin .spin {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* masked title reveal: lines rise out of their mask with --presence */
+.journey[data-live] .scene--spin .spin-title {
+  position: absolute;
+  top: clamp(5rem, 13vh, 8.5rem);
+  left: var(--gutter);
+  z-index: 2;
+}
+.journey[data-live] .scene--spin .spin-title__mask > span {
+  transform: translateY(calc((1 - var(--presence, 1)) * 110%));
+}
+.journey[data-live] .scene--spin .spin-title__mask + .spin-title__mask > span {
+  transform: translateY(calc((1 - var(--presence, 1)) * 150%));
+}
+
+.journey[data-live] .scene--spin .spin-web {
+  position: absolute;
+  margin: 0;
+  top: 50%;
+  right: max(calc(var(--gutter) + 2.75rem), 5vw);
+  width: min(84vh, 56vw);
+  transform: translateY(-50%);
+}
+
+/* line drawing on progress (pathLength = 1) */
+.journey[data-live] .scene--spin .spin-radial {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - clamp(0, var(--spin-frame, 1) * 1.6 - var(--i) * 0.03, 1));
+}
+.journey[data-live] .scene--spin .spin-frame {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - clamp(0, var(--spin-frame, 1) * 2.5 - 1.5, 1));
+}
+.journey[data-live] .scene--spin .spin-hub {
+  opacity: var(--spin-frame, 1);
+}
+.journey[data-live] .scene--spin .spin-band {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - var(--b, 1));
+}
+.journey[data-live] .scene--spin .spin-dew circle {
+  opacity: calc(var(--b, 1) * 0.16);
+}
+
+/* rings: labels and drops sit on the web itself */
+.journey[data-live] .scene--spin .spin-rings {
+  display: block;
+  max-width: none;
+}
+.journey[data-live] .scene--spin .spin-ring__label {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--ground);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: clamp(0, (var(--b, 1) - 0.3) * 2.2, 1);
+  transition: background-color var(--fg-swap);
+}
+.journey[data-live] .scene--spin .spin-ring__label[data-side="top"] {
+  align-items: center;
+  transform: translate(-50%, calc(-100% - 0.9rem + (1 - var(--b, 1)) * 0.6rem));
+}
+.journey[data-live] .scene--spin .spin-ring__label[data-side="bottom"] {
+  align-items: center;
+  transform: translate(-50%, calc(0.9rem + (1 - var(--b, 1)) * 0.6rem));
+}
+.journey[data-live] .scene--spin .spin-ring__label[data-side="left"] {
+  align-items: flex-end;
+  transform: translate(calc(-100% - 0.9rem), -50%);
+}
+.journey[data-live] .scene--spin .spin-ring__label[data-side="right"] {
+  align-items: flex-start;
+  transform: translate(0.9rem, -50%);
+}
+.journey[data-live] .scene--spin .spin-ring__place {
+  font-size: clamp(0.9rem, 0.7rem + 0.5vw, 1.15rem);
+}
+.journey[data-live] .scene--spin .spin-ring__gist {
+  font-size: 0.75rem;
+}
+
+.journey[data-live] .scene--spin .spin-drop {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 2rem;
+  height: 2rem;
+  margin: -1rem 0 0 -1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  justify-content: center;
+  cursor: pointer;
+  opacity: clamp(0, (var(--b, 1) - 0.15 - var(--k) * 0.08) * 3, 1);
+}
+.journey[data-live] .scene--spin .spin-drop__dot {
+  transform: scale(calc(0.4 + var(--b, 1) * 0.6));
+}
+.journey[data-live] .scene--spin .spin-drop:hover .spin-drop__dot,
+.journey[data-live] .scene--spin .spin-drop:focus-visible .spin-drop__dot {
+  transform: scale(1.6);
+  background: radial-gradient(circle at 34% 34%, var(--ground) 0 17%, var(--accent) 22%);
+}
+.journey[data-live] .scene--spin .spin-drop__tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.25rem);
+  padding: 0.35rem 0.6rem;
+  background: var(--fg);
+  color: var(--ground);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 160ms ease, transform 220ms var(--ease-out);
+  z-index: 3;
+}
+.journey[data-live] .scene--spin .spin-drop[data-flip] .spin-drop__tip {
+  bottom: auto;
+  top: calc(100% + 0.25rem);
+  transform: translate(-50%, -4px);
+}
+.journey[data-live] .scene--spin .spin-drop:hover,
+.journey[data-live] .scene--spin .spin-drop:focus-visible {
+  z-index: 4;
+}
+.journey[data-live] .scene--spin .spin-drop:hover .spin-drop__tip,
+.journey[data-live] .scene--spin .spin-drop:focus-visible .spin-drop__tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.journey[data-live] .scene--spin .spin-stats {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(3rem, 11vh, 7rem);
+  margin: 0;
+  max-width: min(40vw, 34rem);
+  flex-direction: column;
+  gap: clamp(1rem, 3vh, 2rem);
+}
+.journey[data-live] .scene--spin .spin-stat__value {
+  font-size: clamp(2.5rem, 1rem + 4.5vw, 6.5rem);
+}
+
+/* chrome reserved zones below 900px: sound toggle bottom-left (~4.5rem),
+   progress thread on the right (~2.75rem) */
+@media (max-width: 899px) {
+  .journey[data-live] .scene--spin .spin-stats {
+    bottom: calc(4.5rem + 0.75rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .journey[data-live] .scene--spin .spin-web {
+    top: 24vh;
+    left: var(--gutter);
+    right: 3rem;
+    margin: 0 auto;
+    width: min(calc(100vw - var(--gutter) - 3rem), 50vh);
+    transform: none;
+  }
+  .journey[data-live] .scene--spin .spin-title {
+    top: clamp(4.5rem, 11vh, 6rem);
+  }
+  .journey[data-live] .scene--spin .spin-ring__label {
+    padding: 0.15rem 0.3rem;
+  }
+  .journey[data-live] .scene--spin .spin-ring__place {
+    font-size: 0.8rem;
+  }
+  .journey[data-live] .scene--spin .spin-ring__gist {
+    display: none;
+  }
+  .journey[data-live] .scene--spin .spin-stats {
+    max-width: none;
+    right: 3rem;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .journey[data-live] .scene--spin .spin-stat__value {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+}
