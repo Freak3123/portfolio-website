@@ -1,0 +1,379 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Hero. The palette is the art's own: ink #0A101A and saffron #FDBF28 trade
+   roles between the two states. Measured contrast — ink on saffron 11.49:1,
+   paper on ink 16.62:1, saffron on ink 11.49:1. Paper on saffron is 1.45:1,
+   so it is never used there.
+   ──────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --ink: #0a101a;
+  --saffron: #fdbf28;
+  --paper: #f3efe7;
+  --ink-muted: #98a1ac;
+  --umber: #5a3a0a;
+
+  --ground: var(--ink);
+  --fg: var(--paper);
+  --fg-muted: var(--ink-muted);
+  --accent: var(--saffron);
+
+  --state-ms: 620ms;
+  --state-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* The ripple starts at the bulb (top right) and reaches the text column last,
+     around 700ms. Foreground colour is therefore switched late and quickly:
+     crossfading it early would put mid-grey text on whichever ground has not
+     changed yet, which is the one moment this palette can be illegible. */
+  --fg-swap: 220ms var(--state-ease) 480ms;
+}
+
+html[data-hero-state="warm"] {
+  --ground: var(--saffron);
+  --fg: var(--ink);
+  --fg-muted: var(--umber);
+  --accent: var(--ink);
+}
+
+html {
+  background: var(--ground);
+  transition: background-color var(--fg-swap);
+}
+
+/* ── layout ─────────────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--fg);
+  transition: background-color var(--fg-swap),
+    color var(--fg-swap);
+  isolation: isolate;
+}
+
+.hero-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  outline: none;
+  /* the peek is a press-and-drag now, so the pointer has to advertise it */
+  cursor: grab;
+  touch-action: none;
+}
+.hero-stage[data-pressed] {
+  cursor: grabbing;
+}
+.hero-stage:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -6px;
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+.hero-stage[data-canvas="1"] .hero-canvas {
+  opacity: 1;
+}
+
+/* The fallback is also the first paint, and the entire no-WebGL experience.
+   Its layout has to be the exact CSS twin of renderer.resize()'s fit, or the
+   canvas fading in over it shows two portraits at different sizes for the
+   length of the transition. */
+.hero-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: block;
+  overflow: hidden;
+}
+.hero-fallback img {
+  position: absolute;
+  height: min(88%, 120vw);
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: none;
+}
+.hero-stage[data-canvas="1"] ~ .hero-fallback,
+.hero:has(.hero-stage[data-canvas="1"]) .hero-fallback {
+  opacity: 0;
+  /* held until the canvas has finished its own 420ms fade-in, so the handover
+     is a no-op rather than a cross-dissolve between two portraits */
+  transition: opacity 200ms ease 440ms;
+}
+
+/* ── the one line — never drawn into the canvas, always selectable ─────── */
+.hero-greeting {
+  position: absolute;
+  z-index: 40;
+  left: clamp(1.25rem, 5vw, 4.5rem);
+  bottom: clamp(1.5rem, 6vh, 4rem);
+  margin: 0;
+  max-width: 10ch;
+  font-size: clamp(2rem, 1.2rem + 3.4vw, 4rem);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  color: var(--fg);
+  transition: color var(--fg-swap);
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+}
+
+:where(.hero a, .hero button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── the cord and the bulb ──────────────────────────────────────────────── */
+.hero-bulb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+  pointer-events: none;
+  overflow: visible;
+}
+.hero-cord {
+  fill: none;
+  stroke: var(--fg-muted);
+  stroke-width: 1.25;
+  transition: stroke var(--fg-swap);
+}
+.hero-cord-grab {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 30;
+  pointer-events: stroke;
+  cursor: pointer;
+  touch-action: none;
+}
+.hero-bulb-body {
+  --lit: 1;
+}
+.hero-bulb-halo {
+  opacity: calc(var(--lit) * 0.6);
+}
+
+/* holder */
+.hero-bulb-collar {
+  fill: #2b3038;
+}
+.hero-bulb-cap {
+  fill: url(#bulbCap);
+}
+.hero-bulb-thread {
+  stroke: #3b424b;
+  stroke-width: 1.1;
+  opacity: 0.85;
+}
+
+/* Glass in two layers. A single hot fill at reduced opacity still reads yellow
+   when the lamp is off — which is exactly wrong, because "off" is the one state
+   the switch has to communicate at a glance. */
+.hero-bulb-glass-cold {
+  /* Nearly opaque and cool on purpose. Half-transparent glass let the saffron
+     ground straight through, so the lamp still read yellow with the light off —
+     physically fair, and exactly the wrong thing for the one state the switch
+     has to communicate at a glance. */
+  fill: #b7c2cf;
+  fill-opacity: 0.92;
+  stroke: #8d98a6;
+  stroke-opacity: 0.9;
+  stroke-width: 1;
+}
+.hero-bulb-glass {
+  fill: url(#bulbGlass);
+  opacity: var(--lit);
+}
+.hero-bulb-filament {
+  fill: none;
+  stroke: color-mix(in srgb, #fff9e0 calc(var(--lit) * 100%), #6f767f);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hero-bulb-shine {
+  fill: #ffffff;
+  opacity: calc(0.22 + var(--lit) * 0.24);
+}
+.hero-bulb-hit {
+  fill: transparent;
+  pointer-events: fill;
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* the real control — a button, not a gesture */
+.hero-bulb-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 35;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  background: none;
+  color: inherit;
+}
+.hero-bulb-button:focus-visible {
+  width: auto;
+  height: auto;
+  clip-path: none;
+  overflow: visible;
+  margin: 1rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--ground);
+  font-size: 0.875rem;
+}
+
+.hero-hint {
+  position: absolute;
+  z-index: 31;
+  top: clamp(13rem, 31vh, 21rem);
+  right: clamp(1rem, 7vw, 5.5rem);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity 500ms ease, color var(--fg-swap);
+}
+html[data-hero-used="1"] .hero-hint {
+  opacity: 0;
+}
+
+/* The peek is invisible until you press, so it needs the same one-word
+   affordance the cord gets. Both fade once they have been used. */
+.hero-hint-peek {
+  position: absolute;
+  z-index: 31;
+  left: 50%;
+  bottom: clamp(1rem, 4vh, 2.5rem);
+  transform: translateX(-50%);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 500ms ease, color var(--fg-swap);
+}
+html[data-hero-peeked="1"] .hero-hint-peek {
+  opacity: 0;
+}
+
+/* ── filaments and ambient ──────────────────────────────────────────────── */
+.hero-filaments {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 22;
+  pointer-events: none;
+}
+.hero-filaments line {
+  stroke: var(--saffron);
+  stroke-width: 1;
+  opacity: 0;
+  transition: stroke 200ms;
+}
+html[data-hero-state="warm"] .hero-filaments line {
+  stroke: var(--ink);
+}
+
+.hero-ambient {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
+}
+.amb-cold line {
+  stroke: var(--saffron);
+  stroke-width: 1;
+}
+.amb-dot {
+  fill: var(--saffron);
+}
+/* thin outlines only — "no thick lines" is one of the few rules the whole
+   visual identity is built on */
+.amb-shape {
+  fill: none;
+  stroke: var(--saffron);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.amb-sym {
+  fill: var(--saffron);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 17px;
+}
+.amb-cold .orb {
+  /* the scale transform would thin the strokes out of existence otherwise */
+  vector-effect: non-scaling-stroke;
+}
+/* matches the doodles already drawn into warm.png — round caps, thin. Colour
+   comes from the element, drawn from the sweater's own palette. */
+.amb-warm path {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+
+.hero-loader {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  pointer-events: none;
+  transition: opacity 380ms ease;
+}
+
+/* ── narrow ─────────────────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+  .hero-greeting {
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    top: clamp(1.5rem, 5vh, 3rem);
+    transform: translateX(-50%);
+    max-width: none;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .hero-hint {
+    top: clamp(11rem, 26vh, 15rem);
+    right: clamp(0.75rem, 5vw, 2rem);
+  }
+}
+
+/* ── reduced motion: remove the travel, keep the meaning ────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  .hero,
+  html {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="700" viewBox="0 0 300 700">
+  <defs>
+    <linearGradient id="goldFrame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2ad"/>
+      <stop offset=".18" stop-color="#d99124"/>
+      <stop offset=".42" stop-color="#ffd96a"/>
+      <stop offset=".68" stop-color="#a96112"/>
+      <stop offset="1" stop-color="#ffe08a"/>
+    </linearGradient>
+    <linearGradient id="goldBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9a5a10"/>
+      <stop offset=".18" stop-color="#d99427"/>
+      <stop offset=".48" stop-color="#ffe28a"/>
+      <stop offset=".7" stop-color="#c57b18"/>
+      <stop offset="1" stop-color="#8e4f0d"/>
+    </linearGradient>
+    <linearGradient id="blackGem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34353a"/>
+      <stop offset=".22" stop-color="#090a0c"/>
+      <stop offset=".52" stop-color="#191a1e"/>
+      <stop offset="1" stop-color="#020203"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".75"/>
+      <stop offset=".5" stop-color="#fff3bb" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity=".65"/>
+    </linearGradient>
+    <filter id="softShadow" x="-40%" y="-20%" width="180%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+  </defs>
+
+  <!-- Transparent background -->
+  <g filter="url(#softShadow)">
+    <!-- Top rectangular black stone + gold bezel -->
+    <rect x="73" y="45" width="154" height="190" rx="17"
+          fill="url(#goldFrame)"/>
+    <rect x="84" y="56" width="132" height="168" rx="9"
+          fill="#0b0b0d"/>
+
+    <!-- Faceted black gemstone -->
+    <path d="M99 72 L201 72 L209 85 L209 197 L199 208 L101 208 L91 197 L91 85 Z"
+          fill="url(#blackGem)" stroke="#3b3c40" stroke-width="3"/>
+    <path d="M99 72 L201 72 L187 91 L113 91 Z"
+          fill="#4a4b50" opacity=".55"/>
+    <path d="M91 85 L113 91 L113 191 L91 197 Z"
+          fill="#242529" opacity=".75"/>
+    <path d="M209 85 L187 91 L187 191 L209 197 Z"
+          fill="#050506" opacity=".85"/>
+    <path d="M113 91 L187 91 L187 191 L113 191 Z"
+          fill="#08090b"/>
+    <path d="M113 91 L129 103 L129 179 L113 191 Z"
+          fill="#323338" opacity=".45"/>
+    <path d="M187 91 L171 103 L171 179 L187 191 Z"
+          fill="#020203" opacity=".7"/>
+    <path d="M113 191 L129 179 L171 179 L187 191 L177 202 L123 202 Z"
+          fill="#16171a" opacity=".9"/>
+
+    <!-- Small gold connector below stone -->
+    <path d="M135 225 L165 225 L165 266 L150 278 L135 266 Z"
+          fill="url(#goldFrame)"/>
+    <rect x="141" y="230" width="18" height="34" rx="4"
+          fill="#fff0b0" opacity=".45"/>
+
+    <!-- Gold jump ring -->
+    <circle cx="150" cy="276" r="27" fill="none"
+            stroke="url(#goldFrame)" stroke-width="13"/>
+    <circle cx="150" cy="276" r="16" fill="#0b0b0d"/>
+
+    <!-- Narrow gold stem -->
+    <rect x="140" y="297" width="20" height="35" rx="4"
+          fill="url(#goldBar)"/>
+
+    <!-- Long rectangular gold drop -->
+    <path d="M121 328
+             Q121 320 129 320
+             L171 320
+             Q179 320 179 328
+             L179 510
+             Q179 518 171 525
+             L129 525
+             Q121 518 121 510 Z"
+          fill="url(#goldBar)"/>
+    <path d="M136 337 L164 337 L164 500 L154 510 L136 510 Z"
+          fill="#ffe08a" opacity=".55"/>
+    <path d="M121 328 L136 337 L136 510 L129 525 L121 510 Z"
+          fill="#7d470d" opacity=".45"/>
+    <path d="M164 337 L179 328 L179 510 L171 525 L164 510 Z"
+          fill="#8b500d" opacity=".5"/>
+    <path d="M136 337 L164 337 L154 347 L146 347 Z"
+          fill="#fff0b0" opacity=".7"/>
+    <path d="M129 510 L136 500 L164 500 L171 510 L162 518 L138 518 Z"
+          fill="#b66c14" opacity=".55"/>
+
+    <!-- Subtle metallic highlight -->
+    <path d="M151 344 L157 344 L157 494 L153 500 L151 500 Z"
+          fill="url(#shine)" opacity=".75"/>
+  </g>
+</svg>
