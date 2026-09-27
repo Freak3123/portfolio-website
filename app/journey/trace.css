@@ -201,6 +201,30 @@
   height: 100%;
 }
 
+/* the view pans across the network, so webs drift under the copy: a scrim
+   in the ground colour keeps the text column clean (invisible on the ground) */
+.journey[data-live] .trace-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    var(--ground) 0%,
+    color-mix(in srgb, var(--ground) 82%, transparent) 30%,
+    transparent 50%
+  );
+  /* lifts as the camera pulls back to the whole network */
+  opacity: calc(1 - var(--net, 0));
+  pointer-events: none;
+  transition: background var(--fg-swap);
+}
+.journey[data-live] .trace-intro,
+.journey[data-live] .trace-projects,
+.journey[data-live] .trace-counter {
+  z-index: 2;
+}
+
 .journey[data-live] .trace-hoverlabel {
   display: flex;
   flex-direction: column;
@@ -318,6 +342,14 @@
    and right ~2.75rem (progress thread) — nothing here lands in those zones.
    The web sits in the upper band (TraceCanvas: cy 0.27h, R ≤ 0.13h). */
 @media (max-width: 759px) {
+  .journey[data-live] .trace-stage::before {
+    background: linear-gradient(
+      0deg,
+      var(--ground) 0%,
+      color-mix(in srgb, var(--ground) 85%, transparent) 42%,
+      transparent 56%
+    );
+  }
   .journey[data-live] .trace-stage {
     --safe-top: 4.75rem;
     --safe-bottom: 5.25rem;

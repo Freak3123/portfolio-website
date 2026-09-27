@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HeroEngine } from "@/lib/hero/engine";
 import Ambient from "./Ambient";
 import BulbCord from "./BulbCord";
+import CornerWebs from "./CornerWebs";
 import Filaments from "./Filaments";
+import HeroLife from "./HeroLife";
 import Loader from "./Loader";
 import PortraitCanvas from "./PortraitCanvas";
 
@@ -58,7 +60,8 @@ export default function HeroStage() {
     };
     const up = (e: PointerEvent) => {
       if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
-      engine.release();
+      // a cancel is the browser taking the touch for a scroll — no tap-peek then
+      engine.release(e.type === "pointercancel");
       delete el.dataset.pressed;
     };
 
@@ -131,6 +134,8 @@ export default function HeroStage() {
     >
       <PortraitCanvas engine={engine} onReady={() => setCanvasReady(true)} />
       <Ambient engine={engine} />
+      <CornerWebs engine={engine} />
+      <HeroLife engine={engine} />
       <Filaments engine={engine} />
       <BulbCord engine={engine} />
       <Loader onDone={onLoaderDone} />

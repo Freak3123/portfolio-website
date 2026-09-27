@@ -12,36 +12,48 @@ import HeroStage from "./HeroStage";
  */
 export default function Hero() {
   return (
-    <section className="hero" id="top">
-      <picture className="hero-fallback">
-        <source
-          type="image/avif"
-          srcSet="/hero/cold-768.avif 768w, /hero/cold-1024.avif 1024w, /hero/cold-1280.avif 1280w"
-          sizes="(max-width: 900px) 100vw, 60vw"
-        />
-        <img
-          src="/hero/cold-1024.webp"
-          srcSet="/hero/cold-768.webp 768w, /hero/cold-1024.webp 1024w, /hero/cold-1280.webp 1280w"
-          sizes="(max-width: 900px) 100vw, 60vw"
-          width={1024}
-          height={1536}
-          alt=""
-          fetchPriority="high"
-          decoding="async"
-        />
-      </picture>
+    <>
+      {/* Ink over the page from the first paint until the loader's canvas has
+          painted its own — otherwise the portrait flashes before hydration. The
+          loader hides it; without JS, CSS fades it out (and <noscript> skips it).
+          Outside the section: .hero isolates, which would trap it under the nav. */}
+      <div className="hero-cover" aria-hidden="true" />
+      <noscript>
+        <style>{`.hero-cover{display:none}`}</style>
+      </noscript>
+      <section className="hero" id="top">
+        <picture className="hero-fallback">
+          <source
+            type="image/avif"
+            srcSet="/hero/cold-768.avif 768w, /hero/cold-1024.avif 1024w, /hero/cold-1280.avif 1280w"
+            sizes="(max-width: 900px) 100vw, 60vw"
+          />
+          <img
+            src="/hero/cold-1024.webp"
+            srcSet="/hero/cold-768.webp 768w, /hero/cold-1024.webp 1024w, /hero/cold-1280.webp 1280w"
+            sizes="(max-width: 900px) 100vw, 60vw"
+            width={1024}
+            height={1536}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
 
-      <h1 className="hero-greeting">Hi, I am Ashreeta,</h1>
+        <h1 className="hero-greeting">Hi, I am Ashreeta,</h1>
 
-      <HeroStage />
+        <HeroStage />
 
-      <p className="hero-hint mono" aria-hidden="true">
-        click
-      </p>
+        <p className="hero-hint mono" aria-hidden="true">
+          click
+        </p>
 
-      <p className="hero-hint-peek mono" aria-hidden="true">
-        hold + drag
-      </p>
-    </section>
+        {/* one affordance, worded for the hand you have: a mouse holds, a finger taps */}
+        <p className="hero-hint-peek mono" aria-hidden="true">
+          <span className="peek-fine">hold to peek</span>
+          <span className="peek-coarse">tap &amp; peek</span>
+        </p>
+      </section>
+    </>
   );
 }

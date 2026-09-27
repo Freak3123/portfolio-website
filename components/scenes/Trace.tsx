@@ -1,10 +1,14 @@
 /**
- * TRACE — the analytical heart. "Trace before you fix", told with silk.
- *   local 0      the tangle: every strand crossed, symptom dew trembling. "Trace first."
- *   local 1…3    one project each: a tracer runs from the symptom along the
- *                tangle, hop by hop, to a knot (root cause, pulse + chime); the
- *                tangle then re-organises into a clean orb web (the fix) and the
- *                metric counts up. Fractional local scrubs all of it.
+ * TRACE — the analytical heart. "Trace before you fix", told with silk: one
+ * web becomes a network, one thread at a time.
+ *   local 0      a single web is spun. "Trace first."
+ *   local 1…3    a thread floats out to the next web and the view follows its
+ *                head (Codrops scroll-driven map / curved-path references);
+ *                where it lands is the symptom, the tracer runs in along the
+ *                radial to the hub (root cause, pulse + chime), and the web is
+ *                spun complete (the fix) while the metric counts up.
+ *   leaving      satellite webs tie on; the camera pulls back to the whole
+ *                network, which hands over to the world web of the next chapter.
  *
  * ELEMENTS → REFERENCES (live layer details in trace/TraceCanvas.tsx)
  *   Split-letter title reveal, masked                 → Awwwards SOTD split-letter / masked text reveals

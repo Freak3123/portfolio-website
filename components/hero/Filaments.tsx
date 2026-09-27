@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { HeroEngine } from "@/lib/hero/engine";
-import { AR, TEAR } from "@/lib/hero/constants";
+import { AR, PEEK } from "@/lib/hero/constants";
 
 /** anchor points in portrait uv, scattered round the figure */
 const ANCHORS: [number, number][] = [
@@ -12,10 +12,11 @@ const ANCHORS: [number, number][] = [
 ];
 
 /**
- * Hairlines from fixed points in the field to the rim of the tear. As the hole
- * moves they stretch and slacken, so the hole reads as *pulled open* rather
- * than painted in — which is the thing that makes this not a cursor-reveal
- * borrowed from somewhere else.
+ * Hairlines from fixed points in the field to the edge of the peek. There is no
+ * circle to hang them on any more — the peek is a cluster of square cells — so
+ * each line ties off at the nearest corner or edge of the nearest lit cell. As
+ * the cluster grows, trails and breaks up, the lines hop from square to square,
+ * so the region reads as *pulled open* rather than painted in.
  *
  * R14's idea is that every filament completes in the same beat regardless of
  * its real length. R14 gets that from `pathLength="1"`, but Chromium does not
@@ -30,10 +31,13 @@ export default function Filaments({ engine }: { engine: HeroEngine }) {
   useEffect(() => {
     const lines = Array.from(g.current?.children ?? []) as SVGLineElement[];
     let draw = 0;
+    // where each line last tied off, so it can finish fading after the last
+    // cell has gone instead of snapping away
+    const ends: ({ x: number; y: number } | null)[] = ANCHORS.map(() => null);
 
     const off = engine.onTick((dt) => {
-      const { fit, radius } = engine;
-      const open = radius > 0 ? 1 : 0;
+      const { fit } = engine;
+      const open = engine.peekLit.length > 0 ? 1 : 0;
       // reduced motion renders at final state; the connection is still visible,
       // it just doesn't travel
       draw += (open - draw) * (engine.reduced ? 1 : 1 - Math.pow(1 - 0.12, dt * 60));
@@ -44,24 +48,20 @@ export default function Filaments({ engine }: { engine: HeroEngine }) {
       }
       g.current?.setAttribute("opacity", "1");
 
-      const cx = engine.mouse.x;
-      const cy = engine.mouse.y;
-
       lines.forEach((ln, i) => {
         const [ax, ay] = ANCHORS[i];
-        // rim point facing this anchor, in uv-x units so the circle stays round
-        let dx = ax - cx;
-        let dy = (ay - cy) * AR;
-        const len = Math.hypot(dx, dy) || 1;
-        dx /= len;
-        dy /= len;
-        const rx = cx + dx * radius;
-        const ry = cy + (dy * radius) / AR;
+        if (open) ends[i] = engine.nearestPeekPoint(ax, ay) ?? ends[i];
+        const end = ends[i];
+        if (!end) {
+          ln.setAttribute("opacity", "0");
+          return;
+        }
+        const len = Math.hypot(end.x - ax, (end.y - ay) * AR);
 
         const X1 = fit.x + ax * fit.w;
         const Y1 = fit.y + ay * fit.h;
-        const X2 = fit.x + rx * fit.w;
-        const Y2 = fit.y + ry * fit.h;
+        const X2 = fit.x + end.x * fit.w;
+        const Y2 = fit.y + end.y * fit.h;
         ln.setAttribute("x1", String(X1));
         ln.setAttribute("y1", String(Y1));
         ln.setAttribute("x2", String(X2));
@@ -70,7 +70,7 @@ export default function Filaments({ engine }: { engine: HeroEngine }) {
         ln.setAttribute("stroke-dasharray", String(px));
         ln.setAttribute("stroke-dashoffset", (px * (1 - draw)).toFixed(2));
         // slack lines read fainter; taut ones read brighter
-        const tension = Math.min(1, TEAR.radius / Math.max(0.18, len));
+        const tension = Math.min(1, PEEK.brush / Math.max(0.18, len));
         ln.setAttribute("opacity", (draw * (0.22 + tension * 0.5)).toFixed(3));
       });
     });

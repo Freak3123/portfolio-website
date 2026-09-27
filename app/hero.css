@@ -118,7 +118,8 @@ html {
   position: absolute;
   z-index: 40;
   left: clamp(1.25rem, 5vw, 4.5rem);
-  bottom: clamp(1.5rem, 6vh, 4rem);
+  /* clear of the fixed sound toggle (chrome.css .sound-gate) under it */
+  bottom: clamp(4.5rem, 9vh, 6rem);
   margin: 0;
   max-width: 10ch;
   font-size: clamp(2rem, 1.2rem + 3.4vw, 4rem);
@@ -282,6 +283,17 @@ html[data-hero-used="1"] .hero-hint {
 html[data-hero-peeked="1"] .hero-hint-peek {
   opacity: 0;
 }
+.hero-hint-peek .peek-coarse {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .hero-hint-peek .peek-fine {
+    display: none;
+  }
+  .hero-hint-peek .peek-coarse {
+    display: inline;
+  }
+}
 
 /* ── filaments and ambient ──────────────────────────────────────────────── */
 .hero-filaments {
@@ -345,14 +357,35 @@ html[data-hero-state="warm"] .hero-filaments line {
   opacity: 0.9;
 }
 
+/* The loader is portalled to <body> and fixed, so it sits over everything —
+   greeting, hints and any page chrome — until it hands off. It has no CSS
+   background on purpose: the canvas paints its own ink, and the exit is that
+   ink being cleared cell by cell, which a background would hide. Nothing about
+   it is rendered on the server, so without JS there is no loader at all. */
 .hero-loader {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 50;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
   pointer-events: none;
-  transition: opacity 380ms ease;
+}
+
+/* The server-rendered stand-in for the loader's first frame (see Hero.tsx).
+   If JS never arrives it still gets out of the way on its own. */
+.hero-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: var(--ink);
+  pointer-events: none;
+  animation: hero-cover-out 0.4s ease 4s forwards;
+}
+@keyframes hero-cover-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 /* ── narrow ─────────────────────────────────────────────────────────────── */
@@ -370,6 +403,18 @@ html[data-hero-state="warm"] .hero-filaments line {
   .hero-hint {
     top: clamp(11rem, 26vh, 15rem);
     right: clamp(0.75rem, 5vw, 2rem);
+  }
+  /* the sound toggle's label runs under a centred hint at these widths */
+  .hero-hint-peek {
+    bottom: calc(clamp(0.75rem, 2.5vh, 1.5rem) + 3.25rem);
+  }
+}
+/* Phones in portrait: the portrait is width-fitted, which puts the lamp at
+   ~0.79 of the width — right where the hint would sit. Put it to the lamp's
+   left instead (renderer fit: pw = 0.8W centred, bulb at 0.86 of pw). */
+@media (max-width: 480px) and (max-aspect-ratio: 11/15) {
+  .hero-hint {
+    right: calc(21.2% + 1.75rem);
   }
 }
 

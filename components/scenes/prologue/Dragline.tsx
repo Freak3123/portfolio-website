@@ -22,6 +22,7 @@
 import { useEffect, useRef } from "react";
 import { gsap, prefersReducedMotion } from "@/lib/motion/gsap";
 import { journey } from "@/lib/journey/journey";
+import { stage } from "@/lib/journey/stage";
 import { sound } from "@/lib/audio/sound";
 
 const GLYPHS = "∑∂λπ∇∫≈⊕θΔ";
@@ -205,7 +206,8 @@ export default function Dragline() {
         scramble(0);
         render();
       }
-      if (introState === "armed" && visible && f.presence > 0.5) play();
+      // wait until the tunnel's hub has opened onto the stage (stage.entry → 1)
+      if (introState === "armed" && visible && f.presence > 0.5 && stage.entry > 0.92) play();
       const leave = Math.min(1, Math.max(0, f.local));
       if (leave !== lastLeave) {
         lastLeave = leave;

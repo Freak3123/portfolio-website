@@ -14,6 +14,10 @@
  *   scrollbar / native touch momentum
  * - The hero → web handoff lands exactly on the first beat ...... same snapping pattern,
  *   applied to the section's first stop
+ * - …and is flown, not scrolled: one gesture dives the camera down a silk
+ *   tunnel into the web (./tunnel.ts), scrubbed by the `entry` trigger ... Codrops "Infinite
+ *   Tubes with Three.js" (2017) + "Scroll-Driven 3D Gallery Using a Blender
+ *   Camera Path" (2026): camera position on a curve = scroll progress
  * - Travel whoosh / ambient warmth follow the camera ........... meermohsin.me sound
  *   ("click anywhere to activate the experience")
  *
@@ -30,6 +34,7 @@ import { LAST_STEP, RANGES, type ChapterId } from "@/lib/journey/chapters";
 import { stage } from "@/lib/journey/stage";
 import { travelAt } from "@/lib/journey/travel";
 import { sound } from "@/lib/audio/sound";
+import { createTunnel } from "./tunnel";
 
 type VirtualScrollData = { deltaX: number; deltaY: number; event: WheelEvent | TouchEvent };
 type LenisLike = Lenis & { options: { virtualScroll?: (d: VirtualScrollData) => boolean } };
@@ -47,6 +52,8 @@ const WHEEL_GAP = 170;
 const WHEEL_THRESHOLD = 24;
 /** swipe distance (px) one touch gesture needs */
 const SWIPE_THRESHOLD = 36;
+/** seconds for one flight down (or back up) the hero → web tunnel */
+const TUNNEL_S = 1.9;
 
 export default function JourneyEngine() {
   const marker = useRef<HTMLSpanElement>(null);
@@ -109,17 +116,30 @@ function goLive(section: HTMLElement): () => void {
       inertia: false,
     },
   });
+  const tunnel = createTunnel(section, stageEl);
+  const onEntry = (s: ScrollTrigger) => {
+    stage.entry = s.progress;
+    section.style.setProperty("--entry", s.progress.toFixed(3));
+    tunnel.update(s.progress);
+  };
   const entry = ScrollTrigger.create({
     trigger: section,
     start: "top bottom",
     end: "top top",
-    onUpdate: (s) => {
-      stage.entry = s.progress;
-      section.style.setProperty("--entry", s.progress.toFixed(3));
-    },
-    onRefresh: (s) => {
-      stage.entry = s.progress;
-      section.style.setProperty("--entry", s.progress.toFixed(3));
+    onUpdate: onEntry,
+    onRefresh: onEntry,
+    // the tunnel is never left hanging: a released drag / touch fling finishes
+    // the dive in the direction it was going
+    snap: {
+      snapTo: (v: number, self?: ScrollTrigger) => {
+        const dir = self?.direction ?? 1;
+        return dir > 0 ? (v > 0.08 ? 1 : 0) : v < 0.92 ? 0 : 1;
+      },
+      directional: false,
+      duration: { min: 0.9, max: 1.7 },
+      ease: "power2.inOut",
+      delay: 0.12,
+      inertia: false,
     },
   });
 
@@ -135,11 +155,8 @@ function goLive(section: HTMLElement): () => void {
   let animTimer = 0;
   stage.target = Math.round(journey.g);
 
-  journey.setNavigator((step) => {
-    const y = scrollFor(step);
-    const dist = Math.abs(step - journey.g);
-    const duration = Math.min(1.8, 0.9 + 0.2 * Math.max(0, dist - 1));
-    stage.target = step;
+  /** glide the page to `y`; the stage is locked until it lands */
+  const flyTo = (y: number, duration: number) => {
     animating = true;
     lockUntil = performance.now() + duration * 1000 - 180;
     window.clearTimeout(animTimer);
@@ -157,7 +174,22 @@ function goLive(section: HTMLElement): () => void {
     } else {
       window.scrollTo({ top: y, behavior: "smooth" });
     }
+  };
+
+  journey.setNavigator((step) => {
+    const y = scrollFor(step);
+    const dist = Math.abs(step - journey.g);
+    // diving in from the hero is the long flight down the tunnel
+    const fromHero = window.scrollY < st.start - 2;
+    const duration = fromHero ? TUNNEL_S : Math.min(1.8, 0.9 + 0.2 * Math.max(0, dist - 1));
+    stage.target = step;
+    flyTo(y, duration);
   });
+  /** back out of the web, up the tunnel, to the hero */
+  const flyOut = () => {
+    stage.target = 0;
+    flyTo(entry.start, TUNNEL_S);
+  };
 
   /** next/prev from the step already in flight, so repeated presses queue up */
   const step = (dir: 1 | -1) => {
@@ -190,10 +222,12 @@ function goLive(section: HTMLElement): () => void {
 
     const y = window.scrollY;
     const lenis = getLenis();
-    // approaching from the hero: land exactly on the first beat
+    // approaching from the hero: one gesture inside the handoff zone flies the
+    // whole tunnel and lands exactly on the first beat
     if (y < st.start - 2) {
+      if (animating) return true; // mid-flight through the tunnel
       const target = (lenis?.targetScroll ?? y) + dy;
-      if (dy > 0 && target >= st.start) {
+      if (dy > 0 && (target >= st.start || y >= entry.start - 2)) {
         if (armed) {
           armed = false;
           journey.goTo(0);
@@ -213,8 +247,13 @@ function goLive(section: HTMLElement): () => void {
       }
       return false;
     }
-    // at either end of the story a fresh gesture hands the page back
-    if (armed && dy < 0 && atStart()) return false;
+    // at either end of the story a fresh gesture hands the page back — at the
+    // start, by flying back up the tunnel
+    if (armed && dy < 0 && atStart()) {
+      armed = false;
+      flyOut();
+      return true;
+    }
     if (armed && dy > 0 && atEnd()) return false;
     if (!armed || now < lockUntil) return true;
     acc += dy;
@@ -412,6 +451,7 @@ function goLive(section: HTMLElement): () => void {
     window.clearTimeout(animTimer);
     st.kill();
     entry.kill();
+    tunnel.destroy();
     io.disconnect();
     ro.disconnect();
     ScrollTrigger.removeEventListener("refresh", onRefresh);

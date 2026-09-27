@@ -5,7 +5,9 @@ import {
   EAR_SPACE,
   EAR_SRC,
   IMG,
+  INTRO,
   MAX_DPR,
+  PEEK,
   TEAR,
   rgb,
 } from "./constants";
@@ -59,6 +61,8 @@ export class PortraitRenderer {
   private u: Record<string, WebGLUniformLocation | null> = {};
   private tex: Record<string, WebGLTexture> = {};
   private dpr = 1;
+  /** the peek grid's CPU copy, as bytes for the R8 upload */
+  private peekBytes = new Uint8Array(PEEK.cols * PEEK.rows);
   ready = false;
 
   constructor(
@@ -97,8 +101,9 @@ export class PortraitRenderer {
 
     for (const name of [
       "uCold", "uWarm", "uEarCold", "uEarWarm", "uImg", "uFitScale", "uFitOffset",
-      "uCells", "uState", "uGrammar", "uRippleGrammar", "uTime", "uMouse",
-      "uRadius", "uRipple",
+      "uCells", "uState", "uGrammar", "uRippleGrammar", "uTime",
+      "uPeek", "uPeekGrid", "uPeekSize", "uIntro", "uIntroCells", "uIntroCentre",
+      "uWebLine", "uRipple",
       "uRippleR", "uBulb", "uBulbPos", "uLens", "uEarRect", "uEarPivotPost",
       "uEarPivotRing", "uEarAngles", "uEarBlend", "uGroundCold", "uGroundWarm",
       "uRimCold", "uRimWarm", "uFeather",
@@ -126,9 +131,44 @@ export class PortraitRenderer {
       ((EAR.anchor.y + (y - EAR_SPACE.gemTop) * EAR.scale) - EAR_RECT.y0) /
       (EAR_RECT.y1 - EAR_RECT.y0);
     gl.uniform2f(this.u.uEarBlend, nb(EAR.blend[0]), nb(EAR.blend[1]));
-    for (const [i, n] of ["uCold", "uWarm", "uEarCold", "uEarWarm"].entries()) {
+    for (const [i, n] of ["uCold", "uWarm", "uEarCold", "uEarWarm", "uPeek"].entries()) {
       gl.uniform1i(this.u[n], i);
     }
+
+    gl.uniform4f(this.u.uPeekGrid, PEEK.origin.x, PEEK.origin.y, PEEK.across, PEEK.across * (IMG.h / IMG.w));
+    gl.uniform2f(this.u.uPeekSize, PEEK.cols, PEEK.rows);
+    gl.uniform2f(this.u.uIntroCells, INTRO.cells[0], INTRO.cells[1]);
+    gl.uniform2f(this.u.uIntroCentre, INTRO.centre.x, INTRO.centre.y);
+    gl.uniform3fv(this.u.uWebLine, rgb(COLOR.saffron));
+
+    /* The peek grid texture. R8 + NEAREST is the whole look: one texel per
+       cell, no filtering between them, so the reveal has hard square edges at
+       any portrait size. It lives on unit 4 and is rewritten in place. */
+    const pt = gl.createTexture()!;
+    this.tex.peek = pt;
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, pt);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, PEEK.cols, PEEK.rows, 0, gl.RED, gl.UNSIGNED_BYTE, this.peekBytes);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+
+  /** Push the engine's grid to the GPU, only on frames where it changed. */
+  private uploadPeek() {
+    const e = this.engine;
+    if (!e.peekDirty) return;
+    e.peekDirty = false;
+    const src = e.peek;
+    const dst = this.peekBytes;
+    for (let i = 0; i < src.length; i++) dst[i] = Math.round(src[i] * 255);
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, this.tex.peek);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, PEEK.cols, PEEK.rows, gl.RED, gl.UNSIGNED_BYTE, dst);
   }
 
   private upload(unit: number, src: TexImageSource, key: string, mip: boolean) {
@@ -225,8 +265,8 @@ export class PortraitRenderer {
     gl.uniform1f(this.u.uGrammar, e.grammar);
     gl.uniform1f(this.u.uRippleGrammar, e.rippleGrammar);
     gl.uniform1f(this.u.uTime, e.time);
-    gl.uniform2f(this.u.uMouse, e.mouse.x, e.mouse.y);
-    gl.uniform1f(this.u.uRadius, e.radius);
+    this.uploadPeek();
+    gl.uniform1f(this.u.uIntro, e.intro);
     gl.uniform2f(this.u.uRipple, e.ripple.x, e.ripple.y);
     gl.uniform1f(this.u.uRippleR, e.rippleR);
     gl.uniform1f(this.u.uBulb, e.bulbLit);
@@ -234,6 +274,7 @@ export class PortraitRenderer {
     gl.uniform1f(this.u.uLens, e.lens);
     gl.uniform2f(this.u.uEarAngles, e.earA.theta, e.earB.theta);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    e.painted = true;
   }
 
   dispose() {

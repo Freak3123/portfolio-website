@@ -1,8 +1,11 @@
 import {
+  AR,
   EAR,
   EAR_CARRY,
   EAR_RECT,
   IMG,
+  INTRO,
+  PEEK,
   SPRINGS,
   TEAR,
   TOGGLE_KICK,
@@ -53,9 +56,40 @@ export class HeroEngine {
   private lastPx = { x: 0, y: 0 };
   private hasPointer = false;
 
+  /**
+   * Non-zero while a peek is being held open (pointer or keyboard). Kept under
+   * its old name because the keyboard handler toggles on it.
+   */
   radius = 0;
   pressed = false;
-  private radiusTarget = 0;
+  private touch = false;
+  /** a touch only starts painting once it is clearly a press, not a scroll */
+  private armed = false;
+  private pressAge = 0;
+  private keyHeld = false;
+  private lastPaint: { x: number; y: number } | null = null;
+
+  /* The peek grid (PEEK in constants). One float per cell, 1 = the other layer
+     shows here. The renderer uploads it as an R8 texture whenever it is dirty. */
+  peek = new Float32Array(PEEK.cols * PEEK.rows);
+  peekDirty = true;
+  /** lit cell indices, rebuilt when dirty — the filaments attach to these */
+  peekLit: number[] = [];
+  private peekStag = new Float32Array(PEEK.cols * PEEK.rows);
+  private peekRate = new Float32Array(PEEK.cols * PEEK.rows);
+  private peekEdge = new Float32Array(PEEK.cols * PEEK.rows);
+  /** seconds since the peek was let go; the linger clock */
+  private releasedFor = Infinity;
+  /** linger/spread in force — shortened when the switch clears the grid */
+  private linger: number = PEEK.linger;
+  private spread: number = PEEK.spread;
+
+  /** 0 → 1 across the entrance; 1 (done) unless the loader hands off */
+  intro = 1;
+  private introWait = -1;
+  /** set by the renderer on its first real frame, so the entrance never runs
+      while the canvas is still invisible */
+  painted = false;
 
   ripple = { x: 0.82, y: 0.08 };
   rippleR = 0;
@@ -87,7 +121,25 @@ export class HeroEngine {
     if (typeof window !== "undefined") {
       this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
+    // seeded per-cell character: when it goes, how fast, how ragged its edge
+    let seed = 1905;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const [d0, d1] = PEEK.decay;
+    for (let i = 0; i < this.peek.length; i++) {
+      this.peekStag[i] = rnd();
+      this.peekRate[i] = d0 + (d1 - d0) * rnd();
+      this.peekEdge[i] = rnd();
+    }
   }
+
+  /**
+   * The loader fires `hero:handoff` as its own cells start to open, so the
+   * portrait's entrance plays underneath the loader's exit.
+   */
+  private onHandoff = () => {
+    if (this.reduced || this.introWait >= 0 || this.intro < 1) return;
+    this.introWait = 0;
+  };
 
   /* ── subscriptions ──────────────────────────────────────────────────────── */
   onTick(fn: Tick) {
@@ -134,30 +186,45 @@ export class HeroEngine {
 
   pointerLeave() {
     this.hasPointer = false;
-    this.pressed = false;
     this.vel.x = this.vel.y = 0;
-    this.radiusTarget = 0;
+    if (this.pressed) this.release(true);
   }
 
-  /** Press opens the hole under your finger, and holds it open while you drag. */
+  /**
+   * Press paints the grid under your finger and holds everything lit while you
+   * drag, so a drag leaves a trail of squares. Let go and it lingers, then
+   * breaks up cell by cell.
+   */
   press(uv: { x: number; y: number }, touch = false) {
     this.pressed = true;
+    this.touch = touch;
+    this.armed = !touch;
+    this.pressAge = 0;
     this.mouse = { ...uv };
     this.mouseTarget = uv;
     this.lastPx = { x: uv.x * IMG.w, y: uv.y * IMG.h };
     this.hasPointer = true;
-    this.radiusTarget = touch ? TEAR.touchRadius : TEAR.radius;
+    this.lastPaint = null;
     this.earA.kick(1.2);
   }
 
-  release() {
+  /** `cancelled` is the browser taking a touch over for a scroll. */
+  release(cancelled = false) {
+    if (!this.pressed) return;
+    // a quick tap never armed — it still gets its peek, as long as it was a tap
+    if (!this.armed && !cancelled && this.canPaint()) {
+      this.paintAt(this.mouseTarget, this.brush());
+    }
     this.pressed = false;
-    this.radiusTarget = 0;
+    this.armed = false;
+    this.lastPaint = null;
   }
 
-  /** Keyboard equivalent — a centred hole the arrows can move. */
+  /** Keyboard equivalent — Enter paints a centred cluster the arrows can move. */
   keyOpen(on: boolean) {
-    this.radiusTarget = on ? TEAR.radius : 0;
+    this.keyHeld = on;
+    this.lastPaint = null;
+    if (on) this.radius = PEEK.brush;
     if (on && !this.hasPointer) this.mouseTarget = { x: 0.45, y: 0.33 };
   }
   keyNudge(dx: number, dy: number) {
@@ -167,10 +234,129 @@ export class HeroEngine {
     };
   }
 
+  /* ── the peek grid ──────────────────────────────────────────────────────── */
+  private brush() {
+    return this.touch && !this.keyHeld ? PEEK.touchBrush : PEEK.brush;
+  }
+
+  /** nothing paints while the world is changing — the two must not fight */
+  private canPaint() {
+    return !this.transitioning && this.intro >= 1;
+  }
+
+  /** Light every cell whose centre falls inside the brush. */
+  private paintAt(c: { x: number; y: number }, r: number) {
+    const { origin, across, cols, rows } = PEEK;
+    const down = across * AR;
+    const gx = (c.x - origin.x) * across;
+    const gy = (c.y - origin.y) * down;
+    const span = r * across * 1.2 + 1;
+    const i0 = Math.max(0, Math.floor(gx - span));
+    const i1 = Math.min(cols - 1, Math.ceil(gx + span));
+    const j0 = Math.max(0, Math.floor(gy - span));
+    const j1 = Math.min(rows - 1, Math.ceil(gy + span));
+    for (let j = j0; j <= j1; j++) {
+      const cy = origin.y + (j + 0.5) / down;
+      for (let i = i0; i <= i1; i++) {
+        const k = j * cols + i;
+        const cx = origin.x + (i + 0.5) / across;
+        // a ragged silhouette, so the cluster reads as squares rather than a disc
+        const rr = r * (0.8 + 0.34 * this.peekEdge[k]);
+        if (this.peek[k] < 1 && Math.hypot(cx - c.x, (cy - c.y) * AR) < rr) {
+          this.peek[k] = 1;
+          this.peekDirty = true;
+        }
+      }
+    }
+  }
+
+  /** Paint the segment since the last frame, so a fast drag leaves no gaps. */
+  private paintTo(c: { x: number; y: number }) {
+    const r = this.brush();
+    const from = this.lastPaint ?? c;
+    const d = Math.hypot(c.x - from.x, (c.y - from.y) * AR);
+    const n = Math.max(1, Math.ceil(d / (0.5 / PEEK.across)));
+    for (let i = 1; i <= n; i++) {
+      const t = i / n;
+      this.paintAt({ x: from.x + (c.x - from.x) * t, y: from.y + (c.y - from.y) * t }, r);
+    }
+    this.lastPaint = { ...c };
+  }
+
+  /** Let the whole grid go now, and quickly — the switch uses this. */
+  private clearPeek() {
+    this.releasedFor = 0;
+    this.linger = 0;
+    this.spread = 0.35;
+  }
+
+  private stepPeek(dt: number) {
+    if (this.pressed && !this.armed) {
+      this.pressAge += dt;
+      if (this.pressAge >= PEEK.touchArm) this.armed = true;
+    }
+    const holding = (this.pressed && this.armed) || this.keyHeld;
+    this.radius = holding ? this.brush() : 0;
+
+    if (holding && this.canPaint()) {
+      this.paintTo(this.mouseTarget);
+      this.releasedFor = 0;
+      this.linger = PEEK.linger;
+      this.spread = PEEK.spread;
+    } else if (!holding || this.transitioning) {
+      this.releasedFor += dt;
+      // held cells never decay; released ones wait out the linger, each with a
+      // little extra of its own, then fall away at their own rate
+      const p = this.peek;
+      for (let k = 0; k < p.length; k++) {
+        if (p[k] <= 0) continue;
+        if (this.releasedFor < this.linger + this.peekStag[k] * this.spread) continue;
+        p[k] *= Math.pow(this.peekRate[k], dt * 60);
+        if (p[k] < 0.02) p[k] = 0;
+        this.peekDirty = true;
+      }
+    }
+
+    if (this.peekDirty) {
+      this.peekLit.length = 0;
+      for (let k = 0; k < this.peek.length; k++) {
+        if (this.peek[k] >= 0.5) this.peekLit.push(k);
+      }
+    }
+  }
+
+  /**
+   * The point on the revealed region's edge nearest to (x, y), portrait uv —
+   * the nearest point of the nearest lit square. Null when nothing is lit.
+   */
+  nearestPeekPoint(x: number, y: number) {
+    const { origin, across, cols } = PEEK;
+    const down = across * AR;
+    let best = Infinity;
+    let bx = 0,
+      by = 0;
+    for (const k of this.peekLit) {
+      const i = k % cols;
+      const j = (k - i) / cols;
+      const x0 = origin.x + i / across;
+      const y0 = origin.y + j / down;
+      const px = Math.min(x0 + 1 / across, Math.max(x0, x));
+      const py = Math.min(y0 + 1 / down, Math.max(y0, y));
+      const d = Math.hypot(px - x, (py - y) * AR);
+      if (d < best) {
+        best = d;
+        bx = px;
+        by = py;
+      }
+    }
+    return best < Infinity ? { x: bx, y: by } : null;
+  }
+
   /* ── the switch ─────────────────────────────────────────────────────────── */
   toggle() {
     if (this.transitioning) return;
     this.transitioning = true;
+    this.clearPeek();
     this.ripple = { ...this.bulbPos };
     this.bulbPendulum.kick(TOGGLE_KICK.bulb);
     this.earA.kick(TOGGLE_KICK.ear);
@@ -228,12 +414,14 @@ export class HeroEngine {
     this.raf = requestAnimationFrame(frame);
 
     document.addEventListener("visibilitychange", this.onVis);
+    window.addEventListener("hero:handoff", this.onHandoff);
   }
 
   stop() {
     this.running = false;
     cancelAnimationFrame(this.raf);
     document.removeEventListener("visibilitychange", this.onVis);
+    window.removeEventListener("hero:handoff", this.onHandoff);
   }
 
   private onVis = () => {
@@ -287,22 +475,34 @@ export class HeroEngine {
     }
   }
 
+  /**
+   * The entrance clock. It waits for the canvas to have actually drawn — if the
+   * portrait is still loading when the loader hands off, the cells would play
+   * out on an invisible canvas — and gives up after two seconds rather than
+   * staging an entrance long after the visitor has started looking.
+   */
+  private stepIntro(dt: number) {
+    if (this.introWait >= 0) {
+      if (this.painted) {
+        this.introWait = -1;
+        this.intro = 0;
+      } else if ((this.introWait += dt) > 2) {
+        this.introWait = -1;
+      }
+      return;
+    }
+    if (this.intro < 1) this.intro = Math.min(1, this.intro + dt / (INTRO.ms / 1000));
+  }
+
   private update(dt: number) {
     this.stepTransition(dt);
+    this.stepIntro(dt);
+    this.stepPeek(dt);
 
     // 60fps-normalised lerps, so the feel survives a 120Hz display
     const k = 1 - Math.pow(1 - TEAR.lerp, dt * 60);
     this.mouse.x += (this.mouseTarget.x - this.mouse.x) * k;
     this.mouse.y += (this.mouseTarget.y - this.mouse.y) * k;
-    const kr = 1 - Math.pow(1 - TEAR.radiusLerp, dt * 60);
-    // no tearing while the world is changing — the two must not fight
-    const rt = this.transitioning ? 0 : this.radiusTarget;
-    this.radius += (rt - this.radius) * kr;
-    // An exponential ease never actually reaches zero, so without this snap the
-    // hole closes but the filaments hang around for seconds afterwards. 0.012 is
-    // ~10% of the open radius — below the point where the hole is legible, and
-    // it guarantees the close terminates instead of asymptoting.
-    if (rt === 0 && this.radius < 0.012) this.radius = 0;
 
     /* lens wakes only when the cursor comes near the glasses */
     const gx = 0.45 * IMG.w;

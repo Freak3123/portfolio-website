@@ -9,8 +9,8 @@ void main(){
 }`;
 
 /**
- * One pass does the whole portrait: both layers, both earrings, the tear, the
- * lens and the bulb's falloff.
+ * One pass does the whole portrait: both layers, both earrings, the ripple,
+ * the peek grid, the entrance cells, the lens and the bulb's falloff.
  *
  * The earrings are composited *here* rather than as their own quads. That is
  * what keeps this to a single draw call with no scene graph — and it also means
@@ -24,6 +24,7 @@ in vec2 vUv;
 out vec4 frag;
 
 uniform sampler2D uCold, uWarm, uEarCold, uEarWarm;
+uniform sampler2D uPeek;   // R8 grid, NEAREST — 1 where the other layer shows
 
 uniform vec2  uImg;        // 1024 x 1536
 uniform vec2  uFitScale;   // canvas uv -> portrait uv
@@ -35,8 +36,12 @@ uniform float uGrammar;    // 0 = cells (cold), 1 = organic (warm)
 uniform float uRippleGrammar; // the scene wipe's own, floored away from pure cells
 uniform float uTime;
 
-uniform vec2  uMouse;      // portrait uv
-uniform float uRadius;     // tear radius, uv-x units. 0 = closed
+uniform vec4  uPeekGrid;  // origin.xy (portrait uv), cells across/down one portrait
+uniform vec2  uPeekSize;   // cols, rows
+uniform float uIntro;      // entrance, 0 -> 1. 1 = done
+uniform vec2  uIntroCells; // entrance cells across / down the portrait
+uniform vec2  uIntroCentre;// the web's hub, portrait uv
+uniform vec3  uWebLine;    // the entrance web's thread colour
 uniform vec2  uRipple;     // portrait uv
 uniform float uRippleR;    // 0 = inactive
 
@@ -75,8 +80,8 @@ vec2 rot(vec2 v, float a){
 }
 
 /* ---------- the tear ----------
-   One function, two grammars, three call sites (hover, touch, the global
-   ripple). The tear speaks in the voice of the layer it is tearing through:
+   One function, two grammars. Only the global ripple uses it now — the press
+   peek became the cell grid below. The tear speaks in the voice of the layer it is tearing through:
    cells while cold is on top, organic while warm is.                       */
 float tear(vec2 uv, vec2 c, float r, float grammar){
   if (r <= 0.0) return 0.0;
@@ -121,6 +126,62 @@ float rimBand(vec2 uv, vec2 c, float r, float grammar){
   float dist = length(d);
   float w = mix(0.003, 0.009, grammar);
   return smoothstep(r + w, r, dist) * smoothstep(r - w * 2.2, r - w * 0.4, dist);
+}
+
+/* ---------- the peek ----------
+   After Codrops' "Beyond the Circle" cursor trail: the CPU writes a coarse
+   persistent grid under the pointer and the shader reads it back with NEAREST
+   filtering, so each cell is either the other world or not. Hard squares, no
+   circle, no rim. */
+float peekMask(vec2 uv){
+  vec2 g = (uv - uPeekGrid.xy) * uPeekGrid.zw / uPeekSize;
+  if (g.x < 0.0 || g.x > 1.0 || g.y < 0.0 || g.y > 1.0) return 0.0;
+  return step(0.5, texture(uPeek, g).r);
+}
+
+/* ---------- the entrance ----------
+   Codrops "Ideas for Pixel Page Transitions" (2023) and "On-Scroll Revealing
+   WebGL Images" (2024): floor(uv * grid) gives every cell its own clock, and
+   each cell picks between the two textures on it. The clocks are organised as
+   a web round her face — spoke and ring cells go first and stay longest, and
+   lean warm — so the grid reads as the loader's web landing on her.
+   Returns (warm, hidden, thread). */
+vec3 introCell(vec2 uv){
+  if (uIntro >= 1.0) return vec3(0.0);
+  vec2 ic = floor(uv * uIntroCells);
+  vec2 cc = (ic + 0.5) / uIntroCells;
+  vec2 d = cc - uIntroCentre; d.y *= AR;
+  float r = length(d);
+  float ang = atan(d.y, d.x);
+
+  // on a spoke (12 of them) or a ring (every 0.17), measured in uv so the
+  // web's threads are about one cell wide at any radius
+  float a = fract(ang / 6.2831853 * 12.0);
+  float spoke = step(min(a, 1.0 - a) * 6.2831853 / 12.0 * r, 0.045);
+  float f = fract(r / 0.17);
+  float ring = step(min(f, 1.0 - f) * 0.17, 0.03) * step(0.1, r);
+  float web = max(spoke, ring);
+
+  float h = hash(ic), h2 = hash(ic + 17.3);
+  float start = 0.04 + 0.34 * clamp(r / 1.1, 0.0, 1.0) + 0.1 * h - 0.06 * web;
+  float dur = 0.2 + 0.16 * h2 + 0.14 * web;
+  float t = (uIntro - start) / dur;
+
+  if (t < 0.0) return vec3(0.0, 1.0, 0.0);
+  if (t >= 1.0) return vec3(0.0);
+
+  // flicker: a new coin toss for this cell 14 times a second, weighted warm on
+  // the web and cold elsewhere, and a last few tosses that are always cold so
+  // the settle is a settle rather than a cut
+  float step14 = floor(uTime * 14.0 + h * 7.0);
+  float p = mix(0.42, 0.8, web) * (1.0 - smoothstep(0.7, 0.95, t));
+  float warm = step(hash(ic + step14 * 1.37), p);
+
+  // thread: a hairline round the web's cells while they are live
+  vec2 fc = fract(uv * uIntroCells);
+  float edge = step(min(min(fc.x, 1.0 - fc.x), min(fc.y, 1.0 - fc.y)), 0.035);
+  float thread = edge * web * (1.0 - t);
+  return vec3(warm, 0.0, thread);
 }
 
 /* ---------- glasses (plan §6: analytic, no texture) ---------- */
@@ -189,8 +250,15 @@ void main(){
      whole canvas, not only to the portrait — the other world lies under the
      empty field too, so tearing out there shows its ground. */
   float ripple = tear(uv, uRipple, uRippleR, uRippleGrammar);
-  float hole   = tear(uv, uMouse, uRadius, uGrammar);
-  float m = max(hole, ripple);
+  float m = max(peekMask(uv), ripple);
+
+  /* the entrance: cells not yet reached show the ground, active ones flicker
+     between the two of her, then everything settles on the state on top */
+  vec3 intro = introCell(uv);
+  float inPortrait = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+  // her warm self only flickers through where she is — out on the empty field
+  // a saffron cell would be a flash, not a glimpse
+  m = max(m, intro.x * inPortrait);
   float showWarm = mix(uState, 1.0 - uState, m);
 
   /* The page ground is the artwork's own baked field, read from the texture.
@@ -213,9 +281,9 @@ void main(){
   ground *= lightMul;
 
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0){
-    float rimOut = max(rimBand(uv, uMouse, uRadius, uGrammar),
-                       rimBand(uv, uRipple, uRippleR, uRippleGrammar));
-    frag = vec4(mix(ground, mix(uRimWarm, uRimCold, uState), rimOut * 0.3), 1.0);
+    float rimOut = rimBand(uv, uRipple, uRippleR, uRippleGrammar);
+    vec3 o = mix(ground, mix(uRimWarm, uRimCold, uState), rimOut * 0.3);
+    frag = vec4(mix(o, uWebLine, intro.z * 0.5), 1.0);
     return;
   }
 
@@ -269,9 +337,9 @@ void main(){
      has to feel *lit*, not merely dark. Same multiplier the ground already got. */
   col *= lightMul;
 
-  /* rim at the tear edge, in the accent of whatever is showing through */
-  float rb = max(rimBand(uv, uMouse, uRadius, uGrammar),
-                 rimBand(uv, uRipple, uRippleR, uRippleGrammar));
+  /* rim at the ripple's edge, in the accent of whatever is showing through.
+     The peek has no rim any more: its edge is the cells themselves. */
+  float rb = rimBand(uv, uRipple, uRippleR, uRippleGrammar);
   // restrained — a lit edge, not an outline round a magnifying glass
   col = mix(col, mix(uRimWarm, uRimCold, uState), rb * 0.3);
 
@@ -284,6 +352,10 @@ void main(){
   vec2 e = min(smoothstep(vec2(0.0), uFeather, uv),
                smoothstep(vec2(1.0), vec2(1.0) - uFeather, uv));
   col = mix(ground, col, min(e.x, smoothstep(0.0, uFeather.y, uv.y)));
+
+  // entrance: unreached cells are still ground; the web's cells carry a thread
+  col = mix(col, ground, intro.y);
+  col = mix(col, uWebLine, intro.z * 0.5);
 
   frag = vec4(col, 1.0);
 }`;

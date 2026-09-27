@@ -367,3 +367,193 @@
 .cn-svg--tall[data-lit-group="4"] .cn-node[data-g="4"] {
   opacity: 1;
 }
+
+/* ═══════════════════════ IDEA BOARD: user threads ═══════════════════════
+   components/scenes/connect/ConnectGraph.tsx — drag a drop onto another (or
+   Enter on one, then another) to tie a thread; the spun web grows with them. */
+
+.cn-node {
+  touch-action: none;
+}
+.cn-svg[data-dragging],
+.cn-svg[data-dragging] .cn-node {
+  cursor: grabbing;
+}
+/* the selected drop (first half of a keyboard / click link) */
+.cn-node[aria-pressed="true"] .cn-hit {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 4;
+  animation: cn-turn 6s linear infinite;
+}
+@keyframes cn-turn {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+/* the drop a dragged drop would tie to */
+.cn-node[data-target] {
+  opacity: 1 !important;
+}
+.cn-node[data-target] .cn-hit {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.cn-node[data-target] .cn-dew,
+.cn-node[data-target] .cn-core {
+  fill: var(--accent);
+  transform: scale(1.6);
+}
+
+.cn-thread {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1 1;
+  animation: cn-draw 420ms var(--ease-out) both;
+  transition: stroke var(--fg-swap), opacity 260ms ease;
+}
+.cn-svg--tall .cn-thread {
+  stroke-width: 3;
+}
+.cn-svg[data-focus] .cn-thread {
+  opacity: 0.45;
+}
+
+/* the web spun between everything the visitor has tied */
+.cn-spun path {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--fg-swap);
+}
+.cn-spun-radials {
+  opacity: 0;
+  stroke-dasharray: 3 5;
+}
+.cn-spun-spiral {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  opacity: 0.7;
+}
+.cn-svg--tall .cn-spun path {
+  stroke-width: 1.8;
+}
+
+/* counter + cut button + screen-reader narration */
+.cn-board {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.75rem 0 0;
+}
+.cn-count {
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  transition: color var(--fg-swap);
+}
+.cn-count__n {
+  display: inline-block;
+  min-width: 1.4em;
+  text-align: right;
+  font-weight: 600;
+  color: var(--fg);
+}
+.cn-count__done {
+  color: var(--accent);
+  font-weight: 600;
+}
+.cn-reset {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--rule, currentColor);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: 500 0.6875rem/1 var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.cn-reset:hover {
+  background: var(--fg);
+  color: var(--ground);
+}
+.cn-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.cn-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* reward: the web is complete — it holds, and hums */
+.cn-stage[data-complete] .cn-spun-spiral {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 1;
+  animation: cn-hum 2.6s ease-in-out infinite;
+}
+.cn-stage[data-complete] .cn-spun-radials {
+  stroke: var(--accent);
+}
+.cn-stage[data-complete] .cn-count__n {
+  color: var(--accent);
+  animation: cn-pop 520ms var(--ease-out) both;
+}
+@keyframes cn-hum {
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes cn-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-thread {
+    animation: none;
+    stroke-dasharray: none;
+  }
+  .cn-node[aria-pressed="true"] .cn-hit,
+  .cn-stage[data-complete] .cn-spun-spiral,
+  .cn-stage[data-complete] .cn-count__n {
+    animation: none;
+  }
+}
+
+.journey[data-live] .scene--connect .cn-board {
+  position: absolute;
+  left: var(--gutter);
+  /* above the fixed sound toggle, which shares this corner (chrome.css) */
+  bottom: calc(clamp(0.75rem, 2.5vh, 1.5rem) + 3.25rem);
+  z-index: 2;
+  margin: 0;
+}
+@media (max-width: 899px) {
+  .journey[data-live] .scene--connect .cn-board {
+    bottom: 6.5rem;
+  }
+}

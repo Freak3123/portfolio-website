@@ -19,12 +19,16 @@
   color: var(--fg);
 }
 
-/* the flood. Static: always full. Live: clip-path written per frame. */
+/* the warm ground. Static: always full. Live: hidden while the dissolve
+   canvas (CreativeDirector) composites it in, shown once fully across. */
 .cr-wash {
   position: absolute;
   inset: 0;
   z-index: 0;
   background: var(--ground);
+}
+.cr-dissolve {
+  display: none;
 }
 
 /* ── the web, inked by the creative self ─────────────────────────────── */
@@ -109,24 +113,145 @@
   line-height: 1;
 }
 
-/* ── draw pad ────────────────────────────────────────────────────────── */
+/* ── warm air: drifting specks (behind the content) and butterflies
+   (above it, so they can land on the board's edge) ─────────────────────── */
+.cr-air {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.cr-air--specks {
+  z-index: 2;
+}
+.cr-air--flies {
+  z-index: 4;
+}
+.journey[data-live] .scene--creative .cr-air {
+  opacity: var(--cr-wipe, 0);
+}
+
+/* ── the "Draw here." board: a pane of warm glass ─────────────────────────
+   Glassmorphism (tint + backdrop-filter blur/saturate + inner sheen), so the
+   saffron world and its doodles stay visible behind it. The canvas is
+   transparent; ink strokes on the pale tint are ~12:1, white ones carry a
+   soft umber shadow drawn by DrawPad. */
 .cr-pad {
   position: relative;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: 20px;
+  background:
+    linear-gradient(155deg, rgb(255 255 255 / 0.34) 0%, rgb(255 255 255 / 0.08) 38%, rgb(255 255 255 / 0) 60%),
+    color-mix(in srgb, var(--paper) 32%, transparent);
+  -webkit-backdrop-filter: blur(8px) saturate(1.35);
+  backdrop-filter: blur(8px) saturate(1.35);
+  border: 1px solid rgb(255 255 255 / 0.55);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 0 0 1px rgb(255 255 255 / 0.12),
+    inset 0 -18px 30px -24px rgb(90 58 10 / 0.35),
+    0 22px 44px -26px rgb(10 16 26 / 0.5);
+}
+/* no backdrop-filter: a denser tint keeps the marks legible */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cr-pad {
+    background: color-mix(in srgb, var(--paper) 62%, transparent);
+  }
 }
 .cr-pad-canvas {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
-  max-height: 48svh;
-  border: 1.5px dashed var(--fg);
-  border-radius: 18px;
+  max-height: 42svh;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgb(10 16 26 / 0.1);
   touch-action: none;
   cursor: crosshair;
 }
-.cr-pad-clear {
-  position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
+.cr-pad-canvas[data-mode="stamp"] {
+  cursor: copy;
+}
+.cr-pad-canvas:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.cr-pad-tools,
+.cr-pad-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.cr-pad-foot {
+  justify-content: space-between;
+}
+.cr-tool {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms var(--ease-out);
+}
+.cr-tool svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+.cr-tool:hover {
+  background: rgb(255 255 255 / 0.35);
+}
+.cr-tool[aria-pressed="true"] {
+  background: var(--fg);
+  color: var(--ground);
+}
+.cr-tool:active {
+  transform: scale(0.92);
+}
+.cr-tool-sep {
+  width: 1px;
+  height: 1.3rem;
+  margin: 0 0.2rem;
+  background: var(--rule);
+}
+.cr-inks {
+  display: flex;
+  gap: 0.45rem;
+  padding-left: 0.2rem;
+}
+.cr-ink {
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: 1px solid rgb(10 16 26 / 0.35);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms ease;
+}
+.cr-ink[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--saffron), 0 0 0 3.5px var(--fg);
+  transform: scale(1.08);
+}
+.cr-pad-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.cr-pad-btn {
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--fg);
   border-radius: 999px;
@@ -136,16 +261,28 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease;
 }
-.cr-pad-clear:hover {
+.cr-pad-btn:hover:not(:disabled) {
   background: var(--fg);
   color: var(--ground);
 }
-.cr-pad-clear:focus-visible,
+.cr-pad-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.cr-tool:focus-visible,
+.cr-ink:focus-visible,
+.cr-pad-btn:focus-visible,
 .cr-card-view:focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-tool,
+  .cr-ink {
+    transition: none;
+  }
 }
 
 /* ── throwable polaroids ─────────────────────────────────────────────── */
@@ -239,11 +376,25 @@
   inset: 0;
   min-height: 0;
 }
+/* no scene-wide fade: the dissolve decides what is warm, pixel by pixel */
+.journey[data-live] .scene--creative[data-active] {
+  opacity: 1;
+}
 .journey[data-live] .scene--creative .cr-wash {
   clip-path: polygon(0 0, 0 0, 0 0);
 }
+.journey[data-live] .scene--creative .cr-dissolve {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
 .journey[data-live] .scene--creative .cr-web {
-  opacity: calc(0.8 * var(--cr-wipe, 0));
+  /* squared: the white silk only reads once the saffron is under it */
+  opacity: calc(0.8 * var(--cr-wipe, 0) * var(--cr-wipe, 0));
 }
 .journey[data-live] .scene--creative .cr-web-radials {
   stroke-dashoffset: calc(1 - var(--cr-draw, 0));

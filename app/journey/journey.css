@@ -81,6 +81,32 @@
   opacity: var(--presence, 0);
 }
 
+/* ── the hero → web tunnel (components/journey/tunnel.ts) ────────────────
+   While the entry trigger is between its ends the engine sets [data-tunnel]:
+   a fixed canvas flies the camera down a silk tube over the receding hero,
+   and the stage (pinned to the top of the screen by an inline transform) is
+   seen only through the torn hub of the web at the tunnel's end. The
+   section's own ground is dropped so the shrinking hero is never covered. */
+.journey-tunnel {
+  display: none;
+}
+.journey[data-live][data-tunnel] {
+  background: transparent;
+}
+.journey[data-live][data-tunnel] .journey-tunnel {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.journey[data-live][data-tunnel] .journey-stage {
+  z-index: 6;
+  will-change: transform, clip-path;
+}
+
 /* ── HUD ───────────────────────────────────────────────────────────────── */
 .journey[data-live] .journey-hud {
   display: block;
@@ -334,7 +360,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .journey-hud,
-  .journey-canvas {
+  .journey-canvas,
+  .journey-tunnel {
     display: none !important;
   }
 }

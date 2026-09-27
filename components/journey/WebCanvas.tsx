@@ -29,6 +29,13 @@
  * - Hero → journey handoff: a single dragline drops from the top
  *   onto the prologue node as the section scrolls in .............. hero §14 (the web assembles
  *   from single threads), meermohsin.me staged reveals
+ * - The world web steps back while Trace builds its own network of webs
+ *   (heavy layers faded to ~15%) ................................... Codrops scroll-driven SVG map:
+ *   the route is the subject, the base map recedes under it
+ * - Connect → Creative: the thread being followed glows hot and its head
+ *   flares, then the other side dissolves in from where it lands ... Codrops "Implementing a
+ *   Dissolve Effect with Shaders and Particles" (2025/02/17) — the edge glow
+ *   (dissolve itself: components/scenes/creative/CreativeDirector.tsx)
  *
  * Performance: one canvas, DPR ≤ 2, driven by journey.subscribe (the engine's
  * single gsap.ticker, paused while the journey is offscreen). Off-screen strands
@@ -37,7 +44,7 @@
 
 import { useEffect, useRef } from "react";
 import { journey } from "@/lib/journey/journey";
-import { RANGES } from "@/lib/journey/chapters";
+import { RANGES, rangeOf } from "@/lib/journey/chapters";
 import { stage } from "@/lib/journey/stage";
 import { spinePieces, travelAt } from "@/lib/journey/travel";
 import { world, LAYER_DEPTH, spineLength, type LayerId } from "@/lib/web/world";
@@ -49,6 +56,8 @@ const smooth = (t: number) => t * t * (3 - 2 * t);
 
 /** cursor influence radius (px) for the L6 push */
 const PUSH_R = 150;
+/** chapter index the connect → creative travel leaves from */
+const TO_WARM = rangeOf("creative").index - 1;
 /** cull margin (px) — sag and plucks can bow a strand past its endpoints */
 const M = 80;
 
@@ -141,6 +150,8 @@ export default function WebCanvas() {
     // 1 while the camera flies along the spine, easing to 0 at rest — the lit
     // thread is the path being followed, not a line to read text through
     let hot = 1;
+    // 1 while the camera follows the thread over to the other side
+    let surge = 0;
 
     const draw = (_j: typeof journey, dt: number) => {
       time += dt;
@@ -185,6 +196,8 @@ export default function WebCanvas() {
 
       // at step 0 the web is only a hint; the dragline carries the frame
       const reveal = 0.2 + 0.8 * smooth(clamp(g, 0, 1));
+      // Trace draws its own network of webs: the world web steps back behind it
+      const quiet = 1 - 0.85 * journey.frame("trace").presence;
       const wobble = warm * 5;
       let plucks = 0;
 
@@ -195,7 +208,7 @@ export default function WebCanvas() {
         const oy = h / 2 - cam.y * k;
         const style = LAYER_STYLE[L];
         ctx.lineWidth = style.width * (1 + 1.4 * warm);
-        ctx.globalAlpha = Math.min(1, style.alpha * (1 + 0.9 * warm) * reveal);
+        ctx.globalAlpha = Math.min(1, style.alpha * (1 + 0.9 * warm) * reveal * quiet);
         ctx.strokeStyle = colors.fg;
         const interactive = L !== 0 && moved;
         ctx.beginPath();
@@ -269,10 +282,12 @@ export default function WebCanvas() {
       const dragLen = sp.cum[sp.pieceEnd[0]];
       const entry = 1 - Math.pow(1 - clamp(stage.entry, 0, 1), 2);
       const D = spineLength(sp, spinePieces(g), entry);
-      hot += ((travelAt(g) || g < 0.5 ? 1 : 0) - hot) * (1 - Math.pow(1 - 0.08, dt * 60));
+      const tr = travelAt(g);
+      hot += ((tr || g < 0.5 ? 1 : 0) - hot) * (1 - Math.pow(1 - 0.08, dt * 60));
+      surge += ((tr && tr.from === TO_WARM ? Math.sin(Math.PI * Math.min(1, tr.t * 1.15)) : 0) - surge) * (1 - Math.pow(1 - 0.18, dt * 60));
 
       // untravelled (never the undropped part of the dragline)
-      ctx.globalAlpha = 0.3 * reveal * (1 + 0.6 * warm);
+      ctx.globalAlpha = 0.3 * reveal * (0.45 + 0.55 * quiet) * (1 + 0.6 * warm);
       ctx.strokeStyle = colors.fg;
       ctx.lineWidth = 1.2 * (1 + warm);
       ctx.beginPath();
@@ -312,17 +327,24 @@ export default function WebCanvas() {
       }
       ctx.strokeStyle = colors.accent;
       if (D > 0.5) {
-        ctx.globalAlpha = 0.16 * hot;
-        ctx.lineWidth = 7 + 4 * warm;
+        ctx.globalAlpha = 0.16 * hot + 0.22 * surge;
+        ctx.lineWidth = 7 + 4 * warm + 10 * surge;
         ctx.stroke();
         ctx.globalAlpha = 0.35 + 0.6 * hot;
-        ctx.lineWidth = 1.2 + 0.6 * hot + 1.4 * warm;
+        ctx.lineWidth = 1.2 + 0.6 * hot + 1.4 * warm + 1.2 * surge;
         ctx.stroke();
         if (D < total) {
+          ctx.save();
           ctx.fillStyle = colors.accent;
+          if (surge > 0.02) {
+            // the head flares as it nears the other side
+            ctx.shadowColor = colors.accent;
+            ctx.shadowBlur = 24 * surge;
+          }
           ctx.beginPath();
-          ctx.arc(tipX, tipY, 3.2 + 0.6 * Math.sin(time * 5), 0, Math.PI * 2);
+          ctx.arc(tipX, tipY, 3.2 + 0.6 * Math.sin(time * 5) + 3 * surge, 0, Math.PI * 2);
           ctx.fill();
+          ctx.restore();
         }
       }
 
@@ -356,7 +378,7 @@ export default function WebCanvas() {
       }
 
       /* dew — glints drift on their own phase, brighten near the cursor */
-      const dewAlpha = 0.5 * reveal * (1 - 0.7 * warm);
+      const dewAlpha = 0.5 * reveal * quiet * (1 - 0.7 * warm);
       if (dewAlpha > 0.02) {
         for (const d of W.dew) {
           const x = d.x * k + ox;

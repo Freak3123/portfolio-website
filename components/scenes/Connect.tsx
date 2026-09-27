@@ -9,6 +9,10 @@
  *  - Neighbour sparks on touch: L2 (hover-for-newbg/12).
  *  - Drops pushed by cursor velocity, springing back: L6 (physics/19).
  *  - Dew and silk: the site owner's spider/web theme (lib/web/draw.ts grammar).
+ *  - Idea board: drag a drop onto another (or Enter on two) to tie a thread;
+ *    nodes run a gentle force sim with draggable nodes and link springs, and
+ *    a web is spun between what you tie ("3 / 12 threads"): D3 force-directed
+ *    graph, observablehq.com/@d3/force-directed-graph.
  *
  * Server component: every skill and project is in the HTML, and static mode
  * shows them as grouped lists.

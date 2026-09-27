@@ -12,8 +12,13 @@
  *   wobblyPath — "the same strands but wobbly").
  * - Floating doodles scattered by cursor velocity ...............................
  *   hero warm orbiters + L6 physics/19 (see creative/Doodles).
- * - "Draw something." pad ....................................................
- *   Awwwards draw-on-canvas toy; Brawer's own mechanic (see creative/DrawPad).
+ * - "Draw here." glass board: brush, stamps, shapes, undo ....................
+ *   Awwwards draw-on-canvas toy; Codrops digital stamp collection; CSS
+ *   backdrop-filter glassmorphism (see creative/DrawPad).
+ * - Butterflies that wander, land on the board / your marks, fold, flee .......
+ *   Matt Cool, "Cursor Monarchs" (see creative/Butterflies).
+ * - Drifting paint specks, sparkles, squiggles ..............................
+ *   ambient particle layer (see creative/Specks).
  * - Tilted polaroids, drag-to-throw, round VIEW buttons .........................
  *   Awwwards drag-to-throw + meermohsin.me round button (see creative/ThrowCards).
  *
@@ -24,8 +29,10 @@
 import Scene from "@/components/journey/Scene";
 import { orbWeb, wobblyPath } from "@/lib/web/draw";
 import CreativeDirector from "./creative/CreativeDirector";
+import Butterflies from "./creative/Butterflies";
 import Doodles from "./creative/Doodles";
 import DrawPad from "./creative/DrawPad";
+import Specks from "./creative/Specks";
 import ThrowCards, { type WorkCard } from "./creative/ThrowCards";
 
 /* the same orb-weaver web, but inked by hand: every strand wobbles */
@@ -89,6 +96,7 @@ export default function Creative() {
       </svg>
 
       <Doodles />
+      <Specks />
 
       <div className="cr-step cr-s0">
         <h2 id="creative-title" className="cr-title">
@@ -99,12 +107,14 @@ export default function Creative() {
       <div className="cr-step cr-s1">
         <div className="cr-play">
           <div className="cr-draw">
-            <h3 className="cr-prompt">Draw something.</h3>
+            <h3 className="cr-prompt">Draw here.</h3>
             <DrawPad />
           </div>
           <ThrowCards cards={CARDS} />
         </div>
       </div>
+
+      <Butterflies />
 
       <CreativeDirector />
     </Scene>

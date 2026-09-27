@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./hero.css";
+@import "./hero-env.css";
 @import "./sections/shared.css";
 @import "./sections/chrome.css";
 @import "./journey/journey.css";

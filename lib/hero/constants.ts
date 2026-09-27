@@ -117,17 +117,53 @@ export const BULB = {
 } as const;
 
 /* ── the tear (plan §8) ───────────────────────────────────────────────────── */
+/* Only the global ripple is a "tear" now; the press-peek became PEEK below. */
 export const TEAR = {
-  /** radius in uv-x units ≈ 113px at the 1024 reference */
-  radius: 0.11,
-  touchRadius: 0.14,
-  /** how long a tap-opened hole stays before closing, ms */
-  touchHold: 2500,
   /** cells across the portrait — 24px at the reference width, per L2 */
   cells: [42, 63] as [number, number],
   /** cursor follow, per frame at 60fps */
   lerp: 0.06,
-  radiusLerp: 0.1,
+} as const;
+
+/* ── the peek ─────────────────────────────────────────────────────────────
+ * After Codrops' "Beyond the Circle: Custom-Shaped Cursor Trail" (2026): a
+ * coarse persistent grid, written under the pointer on the CPU and sampled
+ * with NEAREST filtering, so the reveal is hard square cells rather than a
+ * soft circle. Each cell decays as decay^(dt·60), the reference's own form.
+ */
+export const PEEK = {
+  /** cells across one portrait width; rows run at AR so the cells are square */
+  across: 16,
+  /** the grid covers more than the portrait — the other world lies under the
+      field too — so it starts left of and above it, in portrait uv */
+  origin: { x: -2, y: -1 },
+  cols: 80, // uv x −2 … 3
+  rows: 48, // uv y −1 … 1
+  /** brush radius in uv-x units — twice the old 0.11 hole */
+  brush: 0.22,
+  touchBrush: 0.26,
+  /** after release every cell holds this long before it starts to go, s */
+  linger: 2.2,
+  /** …plus a per-cell random extra, so it breaks up square by square, s */
+  spread: 1.1,
+  /** per-cell decay base, randomised inside this range */
+  decay: [0.8, 0.9] as [number, number],
+  /** a touch has to be held this long (or released as a tap) before it paints,
+      so a scroll that starts on the hero does not leave a patch behind, s */
+  touchArm: 0.14,
+} as const;
+
+/* ── the entrance (after the loader hands off) ────────────────────────────
+ * Codrops "Ideas for Pixel Page Transitions" (2023) staggered cells, done the
+ * way "On-Scroll Revealing WebGL Images" (2024) does it — floor(uv·grid) in the
+ * shader, each cell choosing between two textures on its own clock.
+ */
+export const INTRO = {
+  ms: 1450,
+  /** square cells: 14 across, 21 down */
+  cells: [14, 21] as [number, number],
+  /** the web the cells are organised round — her face, in portrait uv */
+  centre: { x: 0.47, y: 0.34 },
 } as const;
 
 /* ── the global transition (plan §12) ─────────────────────────────────────── */

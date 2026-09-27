@@ -34,6 +34,17 @@ type Navigator = (step: number) => void;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
+/**
+ * How much of the warm "other side" has been revealed for the creative
+ * chapter's presence. The first stretch of the travel is the thread being
+ * followed (glowing, cold world only); the dissolve front then spreads from
+ * where it lands. journey.warmth follows this curve, so sound, chrome and the
+ * dissolve (creative/CreativeDirector.tsx) all turn warm together.
+ */
+export function otherSide(presence: number) {
+  return smooth(clamp((presence - 0.42) / 0.58, 0, 1));
+}
+
 export class Journey {
   g = 0;
   readonly last = LAST_STEP;
@@ -109,7 +120,7 @@ export class Journey {
     this.camera.x += (t.x - this.camera.x) * k;
     this.camera.y += (t.y - this.camera.y) * k;
     this.camera.zoom += (t.zoom - this.camera.zoom) * k;
-    this.warmth = this.frame("creative").presence;
+    this.warmth = otherSide(this.frame("creative").presence);
     for (const fn of this.subs) fn(this, dt);
   }
 

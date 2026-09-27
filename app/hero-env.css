@@ -1,0 +1,39 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   The hero's environment: corner webs and the life in each world. Both are
+   Canvas2D layers inside the stage and never take the pointer — the press-to-
+   peek belongs to the stage, and these read the pointer passively off it.
+   Colour is drawn in the canvas from the same tokens (ink, saffron, paper);
+   the crossfade follows the engine's wipe, not a CSS transition.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* the webs only ever occupy the top of the stage — the canvas is that tall,
+   so nothing it draws can reach her face */
+.hero-webs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 42%;
+  z-index: 21;
+  pointer-events: none;
+  display: block;
+}
+
+/* above the webs, so a butterfly can land on one; below the lamp and filaments */
+.hero-life {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 21;
+  pointer-events: none;
+  display: block;
+}
+
+@media (max-width: 699px) {
+  /* the greeting sits at the top on phones — keep the webs quieter under it */
+  .hero-webs {
+    height: 34%;
+    opacity: 0.8;
+  }
+}

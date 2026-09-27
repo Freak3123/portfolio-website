@@ -167,6 +167,26 @@ export function spineLength(spine: Spine, pieces: number, dragline = 1): number 
   return a + (endLen(whole) - a) * (pieces - whole);
 }
 
+/** the point `len` along the spine, world units (clamped to its ends) */
+export function spinePoint(spine: Spine, len: number): Pt {
+  const { pts, cum } = spine;
+  const n = cum.length;
+  if (len <= 0) return { x: pts[0], y: pts[1] };
+  if (len >= cum[n - 1]) return { x: pts[(n - 1) * 2], y: pts[(n - 1) * 2 + 1] };
+  let lo = 1;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (cum[mid] < len) lo = mid + 1;
+    else hi = mid;
+  }
+  const t = (len - cum[lo - 1]) / (cum[lo] - cum[lo - 1] || 1);
+  return {
+    x: pts[(lo - 1) * 2] + (pts[lo * 2] - pts[(lo - 1) * 2]) * t,
+    y: pts[(lo - 1) * 2 + 1] + (pts[lo * 2 + 1] - pts[(lo - 1) * 2 + 1]) * t,
+  };
+}
+
 /* ── the world ─────────────────────────────────────────────────────────── */
 
 export type World = {
