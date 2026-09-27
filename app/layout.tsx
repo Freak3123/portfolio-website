@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ashreeta Patra — software developer",
   description:
-    "Software developer building agent infrastructure and NLP systems. Résumé, work and contact.",
+    "Ashreeta Patra — a creative AI developer and a true jack of all trades. Résumé, work and contact.",
+  icons: {
+    icon: { url: "/hero/warm-768.webp", type: "image/webp" },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
